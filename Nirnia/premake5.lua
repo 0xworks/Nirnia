@@ -11,7 +11,8 @@ project "Nirnia"
 	files
 	{
 		"src/**.h",
-		"src/**.cpp"
+		"src/**.cpp",
+		"vendor/FastNoise/FastNoise.cpp"
 	}
 
 	defines {
