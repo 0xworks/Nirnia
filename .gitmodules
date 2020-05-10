@@ -1,3 +1,6 @@
 [submodule "Hazel"]
 	path = Hazel
 	url = https://github.com/freeman40/ChernoHazel
+[submodule "Nirnia/vendor/FastNoise"]
+	path = Nirnia/vendor/FastNoise
+	url = https://github.com/Auburns/FastNoise.git
