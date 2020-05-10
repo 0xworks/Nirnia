@@ -1,4 +1,4 @@
-#include "MapLayer.h"
+#include "GroundLayer.h"
 
 #include "Hazel/Core/Application.h"
 #include "Hazel/Renderer/RenderCommand.h"
@@ -8,25 +8,25 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <imgui.h>
 
-MapLayer::MapLayer()
+GroundLayer::GroundLayer()
 : Layer("Map")
-, m_CameraController(1280.0f / 720.0f),
-m_SquareColor({0.2f, 0.3f, 0.8f, 1.0f})
+, m_CameraController(1280.0f / 720.0f)
 {}
 
 
-void MapLayer::OnAttach() {
+void GroundLayer::OnAttach() {
 	HZ_PROFILE_FUNCTION();
-	m_CheckerboardTexture = Hazel::Texture2D::Create("assets/textures/Checkerboard.png");
+	m_SpriteSheet = Hazel::Texture2D::Create("assets/textures/RPGpack_sheet_2X.png");
+	m_Grass = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {3,10}, {128,128});
 }
 
 
-void MapLayer::OnDetach() {
+void GroundLayer::OnDetach() {
 	HZ_PROFILE_FUNCTION();
 }
 
 
-void MapLayer::OnUpdate(Hazel::Timestep ts) {
+void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 	HZ_PROFILE_FUNCTION();
 
 	// Update
@@ -42,24 +42,13 @@ void MapLayer::OnUpdate(Hazel::Timestep ts) {
 	}
 
 	{
-		static float rotation = 0.0f;
-		rotation += ts * 50.0f;
-
 		HZ_PROFILE_SCOPE("Renderer Draw");
 		Hazel::Renderer2D::BeginScene(m_CameraController.GetCamera());
-		Hazel::Renderer2D::DrawRotatedQuad({1.0f, 0.0f}, {0.8f, 0.8f}, -45.0f, {0.8f, 0.2f, 0.3f, 1.0f});
-		Hazel::Renderer2D::DrawQuad({-1.0f, 0.0f}, {0.8f, 0.8f}, {0.8f, 0.2f, 0.3f, 1.0f});
-		Hazel::Renderer2D::DrawQuad({0.5f, -0.5f}, {0.5f, 0.75f}, m_SquareColor);
-		Hazel::Renderer2D::DrawQuad({0.0f, 0.0f, -0.1f}, {20.0f, 20.0f}, m_CheckerboardTexture, 10.0f);
-		Hazel::Renderer2D::DrawRotatedQuad({-2.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, rotation, m_CheckerboardTexture, 20.0f);
-		Hazel::Renderer2D::EndScene();
 
-		Hazel::Renderer2D::BeginScene(m_CameraController.GetCamera());
-		for (float y = -5.0f; y < 5.0f; y += 0.5f) {
-			for (float x = -5.0f; x < 5.0f; x += 0.5f) {
-				glm::vec4 color = {(x + 5.0f) / 10.0f, 0.4f, (y + 5.0f) / 10.0f, 0.7f};
-				Hazel::Renderer2D::DrawQuad({x, y}, {0.45f, 0.45f}, color);
-			}
+		for (float y = -5.0f; y < 5.0f; ++y) {
+		 	for (float x = -5.0f; x < 5.0f; ++x) {
+				Hazel::Renderer2D::DrawQuad({x,y}, {1, 1}, m_Grass);
+		 	}
 		}
 		Hazel::Renderer2D::EndScene();
 	}
@@ -75,12 +64,8 @@ void MapLayer::OnUpdate(Hazel::Timestep ts) {
 }
 
 
-void MapLayer::OnImGuiRender() {
+void GroundLayer::OnImGuiRender() {
 	HZ_PROFILE_FUNCTION();
-
-	ImGui::Begin("Settings");
-	ImGui::ColorEdit4("Square Color", glm::value_ptr(m_SquareColor));
-	ImGui::End();
 
 	ImGui::Begin("Stats");
 	auto stats = Hazel::Renderer2D::GetStats();
@@ -93,6 +78,6 @@ void MapLayer::OnImGuiRender() {
 }
 
 
-void MapLayer::OnEvent(Hazel::Event& e) {
+void GroundLayer::OnEvent(Hazel::Event& e) {
 	m_CameraController.OnEvent(e);
 }

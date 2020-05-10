@@ -14,6 +14,10 @@ project "Nirnia"
 		"src/**.cpp"
 	}
 
+	defines {
+		"_SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING"
+	}		
+	
 	includedirs
 	{
 		"src",
@@ -21,7 +25,8 @@ project "Nirnia"
 		"../Hazel/Hazel/vendor/GLFW/include",
 		"../Hazel/Hazel/vendor/glm",
 		"../Hazel/Hazel/vendor/imgui",
-		"../Hazel/Hazel/vendor/spdlog/include"
+		"../Hazel/Hazel/vendor/spdlog/include",
+		"vendor/FastNoise"
 	}
 	
 	links {
