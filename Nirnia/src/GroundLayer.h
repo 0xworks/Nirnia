@@ -33,11 +33,7 @@ private:
 private:
 	FastNoise m_NoiseSampler;
 
-	uint32_t m_LevelWidth = 50;
-	uint32_t m_LevelHeight = 50;
-
-	std::vector<float> m_Noise;
-	Hazel::OrthographicCameraController m_CameraController;
+	Hazel::Scope<Hazel::OrthographicCameraController> m_CameraController;
 
 	Hazel::Ref<Hazel::Texture2D> m_SpriteSheet;
 	Hazel::Ref<Hazel::SubTexture2D> m_Grass;

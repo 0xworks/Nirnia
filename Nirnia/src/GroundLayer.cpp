@@ -8,10 +8,15 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <imgui.h>
 
+
+// HACK
+#include <Hazel/Events/ApplicationEvent.h>
+
 GroundLayer::GroundLayer()
 : Layer("Map")
-, m_CameraController(1280.0f / 720.0f)
-{}
+{
+	// note: defer creation of camera controller until OnAttach(), so we know the correct window size.
+}
 
 
 void GroundLayer::OnAttach() {
@@ -19,7 +24,9 @@ void GroundLayer::OnAttach() {
 	m_SpriteSheet = Hazel::Texture2D::Create("assets/textures/RPGpack_sheet_2X.png");
 	m_Grass = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {3,10}, {128,128});
 
-	m_Noise = GenerateNoise(m_LevelWidth, m_LevelHeight, 0.15f);
+	auto width = Hazel::Application::Get().GetWindow().GetWidth();
+	auto height = Hazel::Application::Get().GetWindow().GetHeight();
+	m_CameraController = Hazel::CreateScope<Hazel::OrthographicCameraController>(width, height);
 }
 
 
@@ -45,14 +52,25 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 
 	{
 		HZ_PROFILE_SCOPE("Renderer Draw");
-		Hazel::Renderer2D::BeginScene(m_CameraController.GetCamera());
+		Hazel::Renderer2D::BeginScene(m_CameraController->GetCamera());
 
-		for (uint32_t y = 0; y < m_LevelHeight; ++y) {
-		 	for (uint32_t x = 0; x < m_LevelWidth; ++x) {
-				float noiseValue = m_Noise[(y * m_LevelWidth) + x];
-				Hazel::Renderer2D::DrawQuad({x,y}, {1, 1}, glm::vec4 {noiseValue, noiseValue, noiseValue, 1.0f});
-		 	}
-		}
+		// left = -m_AspectRatio * m_ZoomLevel
+		// right = m_AspectRatio * m_ZoomLevel
+		// top = -m_ZoomLevel
+		// bottom = m_ZoomLevel
+
+		// It would be nice to be able to query the camera controller for these bounds,
+		// or at the very least query it for aspect ratio.
+		// That is not available in Hazel right now, so we will have to do it ourselves...
+
+
+		//for (uint32_t y = 0; y < m_LevelHeight; ++y) {
+		// 	for (uint32_t x = 0; x < m_LevelWidth; ++x) {
+		//		float noiseValue = m_Noise[(y * m_LevelWidth) + x];
+		//		Hazel::Renderer2D::DrawQuad({x,y}, {1, 1}, glm::vec4 {noiseValue, noiseValue, noiseValue, 1.0f});
+		// 	}
+		//}
+
 		Hazel::Renderer2D::EndScene();
 	}
 
@@ -82,7 +100,7 @@ void GroundLayer::OnImGuiRender() {
 
 
 void GroundLayer::OnEvent(Hazel::Event& e) {
-	m_CameraController.OnEvent(e);
+	m_CameraController->OnEvent(e);
 }
 
 
