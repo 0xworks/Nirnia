@@ -44,7 +44,9 @@ void GroundLayer::OnAttach() {
 	m_AspectRatio = static_cast<float>(Hazel::Application::Get().GetWindow().GetWidth()) / static_cast<float>(Hazel::Application::Get().GetWindow().GetHeight());
 	m_CameraController = Hazel::CreateScope<Hazel::OrthographicCameraController>(m_AspectRatio);
 
-	m_CameraController->SetZoomLevel(1.0f); // TODO: set this to something more sensible
+	float zoom = 4.0f;
+	m_CameraController->SetZoomLevel(zoom);
+	m_CameraController->GetCamera().SetProjection(-m_AspectRatio * zoom, m_AspectRatio * zoom, -zoom, zoom); // BUG: camera controller does not do this when you SetZoomLevel()
 }
 
 
