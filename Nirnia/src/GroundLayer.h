@@ -6,6 +6,9 @@
 #include <Hazel/Renderer/SubTexture2D.h>
 #include <Hazel/Renderer/VertexArray.h>
 
+// HACK: (see comments in OnWindowResize)
+#include <Hazel/Events/ApplicationEvent.h>
+
 #include "FastNoise.h"
 
 #include <glm/glm.hpp>
@@ -28,7 +31,7 @@ public:
 	void OnEvent(Hazel::Event& e) override;
 
 private:
-	std::vector<float> GenerateNoise(uint32_t width, uint32_t height, float scale);
+	bool OnWindowResize(Hazel::WindowResizeEvent& e);
 
 private:
 	FastNoise m_NoiseSampler;
@@ -36,6 +39,9 @@ private:
 	Hazel::Scope<Hazel::OrthographicCameraController> m_CameraController;
 
 	Hazel::Ref<Hazel::Texture2D> m_SpriteSheet;
+	Hazel::Ref<Hazel::SubTexture2D> m_Dirt;
 	Hazel::Ref<Hazel::SubTexture2D> m_Grass;
+	Hazel::Ref<Hazel::SubTexture2D> m_Water;
 
+	float m_AspectRatio = 1.0f;
 };

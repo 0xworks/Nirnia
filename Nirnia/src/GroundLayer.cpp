@@ -9,24 +9,42 @@
 #include <imgui.h>
 
 
-// HACK
-#include <Hazel/Events/ApplicationEvent.h>
-
 GroundLayer::GroundLayer()
 : Layer("Map")
 {
+	//
+	// loads of options here
+	m_NoiseSampler.SetFrequency(0.01);                        // Default 0.1
+	m_NoiseSampler.SetInterp(FastNoise::Quintic);            // Default: Quintic
+	m_NoiseSampler.SetNoiseType(FastNoise::Simplex);         // Default: Simplex  (SimplexFractal is good for height-maps, but that's not really what we're after here)
+
+	// Fractal noise only
+	m_NoiseSampler.SetFractalOctaves(3);                     // Default 3
+	m_NoiseSampler.SetFractalLacunarity(2.0);                // Default 2.0
+	m_NoiseSampler.SetFractalGain(0.5);                      // Default 0.5  (otherwise known as "persistence")
+	m_NoiseSampler.SetFractalType(FastNoise::FBM);           // Default: FBM
+
+	// + others for Cellular noise...
+
+
 	// note: defer creation of camera controller until OnAttach(), so we know the correct window size.
+
 }
 
 
 void GroundLayer::OnAttach() {
 	HZ_PROFILE_FUNCTION();
 	m_SpriteSheet = Hazel::Texture2D::Create("assets/textures/RPGpack_sheet_2X.png");
-	m_Grass = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {3,10}, {128,128});
+	m_Dirt = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {6,11}, {128,128});
+	m_Grass = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {1,11}, {128,128});
+	m_Water = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {11,11}, {128,128});
 
-	auto width = Hazel::Application::Get().GetWindow().GetWidth();
-	auto height = Hazel::Application::Get().GetWindow().GetHeight();
-	m_CameraController = Hazel::CreateScope<Hazel::OrthographicCameraController>(width, height);
+	// HACK: we need to remember width and height because there is currently no way to retrieve
+	//       these from the camera controller later.
+	m_AspectRatio = static_cast<float>(Hazel::Application::Get().GetWindow().GetWidth()) / static_cast<float>(Hazel::Application::Get().GetWindow().GetHeight());
+	m_CameraController = Hazel::CreateScope<Hazel::OrthographicCameraController>(m_AspectRatio);
+
+	m_CameraController->SetZoomLevel(1.0f); // TODO: set this to something more sensible
 }
 
 
@@ -39,7 +57,7 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 	HZ_PROFILE_FUNCTION();
 
 	// Update
-	m_CameraController.OnUpdate(ts);
+	m_CameraController->OnUpdate(ts);
 
 	// Render
 	Hazel::Renderer2D::ResetStats();
@@ -54,22 +72,27 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 		HZ_PROFILE_SCOPE("Renderer Draw");
 		Hazel::Renderer2D::BeginScene(m_CameraController->GetCamera());
 
-		// left = -m_AspectRatio * m_ZoomLevel
-		// right = m_AspectRatio * m_ZoomLevel
-		// top = -m_ZoomLevel
-		// bottom = m_ZoomLevel
+		float zoom = m_CameraController->GetZoomLevel();
+		glm::vec3 position = m_CameraController->GetCamera().GetPosition();
+		
+		float left = std::floor((-m_AspectRatio * zoom) + position.x) + 0.5f;
+		float right = std::ceil(m_AspectRatio * zoom + position.x) + 0.5f;
+		float bottom = std::floor(-zoom + position.y) + 0.5f;
+		float top = std::ceil(zoom + position.y) + 0.5f;
 
-		// It would be nice to be able to query the camera controller for these bounds,
-		// or at the very least query it for aspect ratio.
-		// That is not available in Hazel right now, so we will have to do it ourselves...
 
-
-		//for (uint32_t y = 0; y < m_LevelHeight; ++y) {
-		// 	for (uint32_t x = 0; x < m_LevelWidth; ++x) {
-		//		float noiseValue = m_Noise[(y * m_LevelWidth) + x];
-		//		Hazel::Renderer2D::DrawQuad({x,y}, {1, 1}, glm::vec4 {noiseValue, noiseValue, noiseValue, 1.0f});
-		// 	}
-		//}
+		for (float y = top; y >= bottom; --y) {
+			for (float x = left; x < right; ++x) {
+				float noiseValue = m_NoiseSampler.GetNoise(x, y);
+				Hazel::Ref<Hazel::SubTexture2D> subTexture = m_Grass;
+				if (noiseValue < 0.005) {
+					subTexture = m_Water;
+				} else if (noiseValue < 0.2) {
+					subTexture = m_Dirt;
+				}
+				Hazel::Renderer2D::DrawQuad({x,y}, {1, 1}, subTexture);
+		 	}
+		}
 
 		Hazel::Renderer2D::EndScene();
 	}
@@ -100,24 +123,16 @@ void GroundLayer::OnImGuiRender() {
 
 
 void GroundLayer::OnEvent(Hazel::Event& e) {
+
+	Hazel::EventDispatcher dispatcher(e);
+	dispatcher.Dispatch<Hazel::WindowResizeEvent>(HZ_BIND_EVENT_FN(GroundLayer::OnWindowResize));
+
 	m_CameraController->OnEvent(e);
 }
 
 
-std::vector<float> GroundLayer::GenerateNoise(uint32_t width, uint32_t height, float scale) {
-	std::vector<float> noise(width * height, 0.0f);
-
-	if (scale <= 0.0f) {
-		scale = 0.00001f;
-	}
-
-	for (uint32_t y = 0; y < height; ++y) {
-		for (uint32_t x = 0; x < width; ++x) {
-			float sampleX = static_cast<float>(x) / scale;
-			float sampleY = static_cast<float>(y) / scale;
-			noise[(y * width) + x] = m_NoiseSampler.GetSimplex(sampleX, sampleY);
-		}
-	}
-
-	return noise;
+// HACK: we need this because there is currently no way to retrieve width/height from the camera controller
+bool GroundLayer::OnWindowResize(Hazel::WindowResizeEvent& e) {
+	m_AspectRatio = static_cast<float>(e.GetWidth()) / static_cast<float>(e.GetHeight());
+	return false;
 }
