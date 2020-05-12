@@ -14,7 +14,7 @@ GroundLayer::GroundLayer()
 {
 	//
 	// loads of options here
-	m_NoiseSampler.SetFrequency(0.01);                        // Default 0.1
+	m_NoiseSampler.SetFrequency(0.01f);                      // Default 0.1
 	m_NoiseSampler.SetInterp(FastNoise::Quintic);            // Default: Quintic
 	m_NoiseSampler.SetNoiseType(FastNoise::Simplex);         // Default: Simplex  (SimplexFractal is good for height-maps, but that's not really what we're after here)
 
@@ -35,9 +35,90 @@ GroundLayer::GroundLayer()
 void GroundLayer::OnAttach() {
 	HZ_PROFILE_FUNCTION();
 	m_SpriteSheet = Hazel::Texture2D::Create("assets/textures/RPGpack_sheet_2X.png");
-	m_Dirt = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {6,11}, {128,128});
-	m_Grass = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {1,11}, {128,128});
-	m_Water = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {11,11}, {128,128});
+
+	m_SubTextures.resize(81);                                                                        //  TL    TR    BL    BR
+	m_SubTextures[ 0] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {11, 11}, {128, 128});  // water water water water
+	m_SubTextures[ 1] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {13, 12}, {128, 128});  // water water water grass
+	m_SubTextures[ 2] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water water water dirt  => X
+	m_SubTextures[ 3] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {14, 12}, {128, 128});  // water water grass water
+	m_SubTextures[ 4] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {11, 10}, {128, 128});  // water water grass grass
+	m_SubTextures[ 5] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water water grass dirt  => X
+	m_SubTextures[ 6] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water water dirt water  => X
+	m_SubTextures[ 7] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water water dirt grass  => X
+	m_SubTextures[ 8] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water water dirt dirt   => X
+	m_SubTextures[ 9] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {13, 11}, {128, 128});  // water grass water water
+	m_SubTextures[10] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {12, 11}, {128, 128});  // water grass water grass
+	m_SubTextures[11] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water grass water dirt  => X
+	m_SubTextures[12] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water grass grass water => X
+	m_SubTextures[13] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {12, 10}, {128, 128});  // water grass grass grass
+	m_SubTextures[14] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water grass grass dirt  => X
+	m_SubTextures[15] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water grass dirt water  => X
+	m_SubTextures[16] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water grass dirt grass  => X
+	m_SubTextures[17] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water grass dirt dirt   => X
+	m_SubTextures[18] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water dirt water water  => X
+	m_SubTextures[19] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water dirt water grass  => X
+	m_SubTextures[20] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water dirt water dirt   => X
+	m_SubTextures[21] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water dirt grass water  => X
+	m_SubTextures[22] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water dirt grass grass  => X
+	m_SubTextures[23] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water dirt grass dirt   => X
+	m_SubTextures[24] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water dirt dirt water   => X
+	m_SubTextures[25] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water dirt dirt grass   => X
+	m_SubTextures[26] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water dirt dirt dirt    => X
+	m_SubTextures[27] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {14, 11}, {128, 128});  // grass water water water
+	m_SubTextures[28] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass water water grass => X
+	m_SubTextures[29] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass water water dirt  => X
+	m_SubTextures[30] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {10, 11}, {128, 128});  // grass water grass water
+	m_SubTextures[31] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {10, 10}, {128, 128});  // grass water grass grass
+	m_SubTextures[32] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass water grass dirt  => X
+	m_SubTextures[33] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass water dirt water  => X
+	m_SubTextures[34] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass water dirt grass  => X
+	m_SubTextures[35] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass water dirt dirt   => X
+	m_SubTextures[36] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {11, 12}, {128, 128});  // grass grass water water
+	m_SubTextures[37] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {12, 12}, {128, 128});  // grass grass water grass
+	m_SubTextures[38] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass grass water dirt  => X
+	m_SubTextures[39] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {10, 12}, {128, 128});  // grass grass grass water
+	m_SubTextures[40] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 1, 11}, {128, 128});  // grass grass grass grass
+	m_SubTextures[41] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 5, 12}, {128, 128});  // grass grass grass dirt
+	m_SubTextures[42] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass grass dirt water  => X
+	m_SubTextures[43] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 7, 12}, {128, 128});  // grass grass dirt grass
+	m_SubTextures[44] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 6, 12}, {128, 128});  // grass grass dirt dirt
+	m_SubTextures[45] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass dirt water water  => X
+	m_SubTextures[46] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass dirt water grass  => X
+	m_SubTextures[47] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass dirt water dirt   => X
+	m_SubTextures[48] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass dirt grass water  => X
+	m_SubTextures[49] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 5, 10}, {128, 128});  // grass dirt grass grass
+	m_SubTextures[50] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 5, 11}, {128, 128});  // grass dirt grass dirt
+	m_SubTextures[51] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass dirt dirt water   => X
+	m_SubTextures[52] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass dirt dirt grass   => X
+	m_SubTextures[53] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 9, 11}, {128, 128});  // grass dirt dirt dirt
+	m_SubTextures[54] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt water water water  => X
+	m_SubTextures[55] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt water water grass  => X
+	m_SubTextures[56] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt water water dirt   => X
+	m_SubTextures[57] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt water grass water  => X
+	m_SubTextures[58] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt water grass grass  => X
+	m_SubTextures[59] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt water grass dirt   => X
+	m_SubTextures[60] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt water dirt water   => X
+	m_SubTextures[61] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt water dirt grass   => X
+	m_SubTextures[62] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt water dirt dirt    => X
+	m_SubTextures[63] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt grass water water  => X
+	m_SubTextures[64] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt grass water grass  => X
+	m_SubTextures[65] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt grass water dirt   => X
+	m_SubTextures[66] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt grass grass water  => X
+	m_SubTextures[67] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 7, 10}, {128, 128});  // dirt grass grass grass
+	m_SubTextures[68] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt grass grass dirt  => X
+	m_SubTextures[69] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt grass dirt water  => X
+	m_SubTextures[70] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 7, 11}, {128, 128});  // dirt grass dirt grass
+	m_SubTextures[71] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 8, 11}, {128, 128});  // dirt grass dirt dirt
+	m_SubTextures[72] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt dirt water water  => X
+	m_SubTextures[73] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt dirt water grass  => X
+	m_SubTextures[74] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt dirt water dirt   => X
+	m_SubTextures[75] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt dirt grass water  => X
+	m_SubTextures[76] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 6, 10}, {128, 128});  // dirt dirt grass grass
+	m_SubTextures[77] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 9, 12}, {128, 128});  // dirt dirt grass dirt
+	m_SubTextures[78] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt dirt dirt water   => X
+	m_SubTextures[79] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 8, 12}, {128, 128});  // dirt dirt dirt grass
+	m_SubTextures[80] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 6, 11}, {128, 128});  // dirt dirt dirt dirt
+
 
 	// HACK: we need to remember width and height because there is currently no way to retrieve
 	//       these from the camera controller later.
@@ -61,38 +142,57 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 	// Update
 	m_CameraController->OnUpdate(ts);
 
+	float zoom = m_CameraController->GetZoomLevel();
+	glm::vec3 position = m_CameraController->GetCamera().GetPosition();
+
+	// TODO: what if overflow an int?  (unlikely, but still...)
+	int left = static_cast<int>(std::floor((-m_AspectRatio * zoom) + position.x - 1.0f));
+	int right = static_cast<int>(std::ceil(m_AspectRatio * zoom + position.x + 1.0f));
+	int bottom = static_cast<int>(std::floor(-zoom + position.y - 1.0f));
+	int top = static_cast<int>(std::ceil(zoom + position.y + 1.0f));
+
+	int width = (right - left);
+	int height = (top - bottom);
+
+	std::vector<uint8_t> tiles;
+	tiles.reserve(width * height);
+	{
+		HZ_PROFILE_SCOPE("Generate map");
+
+		// TODO: don't generate the whole thing every time, just add and remove bits as the "viewport" moves around
+
+		// generate from raw noise
+		for (int y = top - 1; y >= bottom; --y) {
+			for (int x = left; x < right; ++x) {
+				float noiseValue = m_NoiseSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
+				if (noiseValue < 0.005) {
+					tiles.emplace_back(0);       // water
+				} else if (noiseValue < 0.6) {
+					tiles.emplace_back(1);       // grass
+				} else {
+					tiles.emplace_back(2);       // dirt
+				}
+			}
+		}
+	}
+
 	// Render
 	Hazel::Renderer2D::ResetStats();
 	Hazel::Renderer2D::StatsBeginFrame();
-	{
-		HZ_PROFILE_SCOPE("Renderer Prep");
-		Hazel::RenderCommand::SetClearColor({0.1f, 0.1f, 0.1f, 1});
-		Hazel::RenderCommand::Clear();
-	}
 
 	{
 		HZ_PROFILE_SCOPE("Renderer Draw");
+
+		Hazel::RenderCommand::SetClearColor({0.1f, 0.1f, 0.1f, 1});
+		Hazel::RenderCommand::Clear();
+
 		Hazel::Renderer2D::BeginScene(m_CameraController->GetCamera());
 
-		float zoom = m_CameraController->GetZoomLevel();
-		glm::vec3 position = m_CameraController->GetCamera().GetPosition();
-		
-		float left = std::floor((-m_AspectRatio * zoom) + position.x) + 0.5f;
-		float right = std::ceil(m_AspectRatio * zoom + position.x) + 0.5f;
-		float bottom = std::floor(-zoom + position.y) + 0.5f;
-		float top = std::ceil(zoom + position.y) + 0.5f;
-
-
-		for (float y = top; y >= bottom; --y) {
-			for (float x = left; x < right; ++x) {
-				float noiseValue = m_NoiseSampler.GetNoise(x, y);
-				Hazel::Ref<Hazel::SubTexture2D> subTexture = m_Grass;
-				if (noiseValue < 0.005) {
-					subTexture = m_Water;
-				} else if (noiseValue < 0.2) {
-					subTexture = m_Dirt;
-				}
-				Hazel::Renderer2D::DrawQuad({x,y}, {1, 1}, subTexture);
+		for (int y = height - 1; y > 0; --y) {
+			for (int x = 1; x < width; ++x) {
+				uint32_t index = ((height - y) * width) + x;
+				uint32_t tile = (27 * tiles[index - width - 1]) + (9 * tiles[index - width]) + (3 * tiles[index - 1]) + tiles[index];
+				Hazel::Renderer2D::DrawQuad({x + left + 0.5, y + bottom + 0.5}, {1, 1}, m_SubTextures[tile]);
 		 	}
 		}
 

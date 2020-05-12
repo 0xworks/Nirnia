@@ -39,9 +39,7 @@ private:
 	Hazel::Scope<Hazel::OrthographicCameraController> m_CameraController;
 
 	Hazel::Ref<Hazel::Texture2D> m_SpriteSheet;
-	Hazel::Ref<Hazel::SubTexture2D> m_Dirt;
-	Hazel::Ref<Hazel::SubTexture2D> m_Grass;
-	Hazel::Ref<Hazel::SubTexture2D> m_Water;
+	std::vector<Hazel::Ref<Hazel::SubTexture2D>> m_SubTextures;
 
 	float m_AspectRatio = 1.0f;
 };
