@@ -34,7 +34,8 @@ private:
 	bool OnWindowResize(Hazel::WindowResizeEvent& e);
 
 private:
-	FastNoise m_NoiseSampler;
+	FastNoise m_TerrainSampler;
+	FastNoise m_GrassTypeSampler;
 
 	Hazel::Scope<Hazel::OrthographicCameraController> m_CameraController;
 

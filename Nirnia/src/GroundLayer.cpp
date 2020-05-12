@@ -14,18 +14,19 @@ GroundLayer::GroundLayer()
 {
 	//
 	// loads of options here
-	m_NoiseSampler.SetFrequency(0.01f);                      // Default 0.1
-	m_NoiseSampler.SetInterp(FastNoise::Quintic);            // Default: Quintic
-	m_NoiseSampler.SetNoiseType(FastNoise::Simplex);         // Default: Simplex  (SimplexFractal is good for height-maps, but that's not really what we're after here)
+	m_TerrainSampler.SetFrequency(0.01f);                      // Default 0.1
+	m_TerrainSampler.SetInterp(FastNoise::Quintic);            // Default: Quintic
+	m_TerrainSampler.SetNoiseType(FastNoise::Simplex);         // Default: Simplex  (SimplexFractal is good for height-maps, but that's not really what we're after here)
 
 	// Fractal noise only
-	m_NoiseSampler.SetFractalOctaves(3);                     // Default 3
-	m_NoiseSampler.SetFractalLacunarity(2.0);                // Default 2.0
-	m_NoiseSampler.SetFractalGain(0.5);                      // Default 0.5  (otherwise known as "persistence")
-	m_NoiseSampler.SetFractalType(FastNoise::FBM);           // Default: FBM
+	m_TerrainSampler.SetFractalOctaves(3);                     // Default 3
+	m_TerrainSampler.SetFractalLacunarity(2.0);                // Default 2.0
+	m_TerrainSampler.SetFractalGain(0.5);                      // Default 0.5  (otherwise known as "persistence")
+	m_TerrainSampler.SetFractalType(FastNoise::FBM);           // Default: FBM
 
 	// + others for Cellular noise...
 
+	m_GrassTypeSampler.SetNoiseType(FastNoise::WhiteNoise);
 
 	// note: defer creation of camera controller until OnAttach(), so we know the correct window size.
 
@@ -36,7 +37,7 @@ void GroundLayer::OnAttach() {
 	HZ_PROFILE_FUNCTION();
 	m_SpriteSheet = Hazel::Texture2D::Create("assets/textures/RPGpack_sheet_2X.png");
 
-	m_SubTextures.resize(81);                                                                        //  TL    TR    BL    BR
+	m_SubTextures.resize(83);                                                                        //  TL    TR    BL    BR
 	m_SubTextures[ 0] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {11, 11}, {128, 128});  // water water water water
 	m_SubTextures[ 1] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {13, 12}, {128, 128});  // water water water grass
 	m_SubTextures[ 2] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water water water dirt  => X
@@ -119,6 +120,10 @@ void GroundLayer::OnAttach() {
 	m_SubTextures[79] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 8, 12}, {128, 128});  // dirt dirt dirt grass
 	m_SubTextures[80] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 6, 11}, {128, 128});  // dirt dirt dirt dirt
 
+	// There's a couple of other "grass" tiles
+	m_SubTextures[81] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {3, 10}, {128, 128});  // grass grass grass grass
+	m_SubTextures[82] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {4, 10}, {128, 128});  // grass grass grass grass
+
 
 	// HACK: we need to remember width and height because there is currently no way to retrieve
 	//       these from the camera controller later.
@@ -154,7 +159,7 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 	int width = (right - left);
 	int height = (top - bottom);
 
-	std::vector<uint8_t> tiles;
+	std::vector<float> tiles;
 	tiles.reserve(width * height);
 	{
 		HZ_PROFILE_SCOPE("Generate map");
@@ -164,13 +169,20 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 		// generate from raw noise
 		for (int y = top - 1; y >= bottom; --y) {
 			for (int x = left; x < right; ++x) {
-				float noiseValue = m_NoiseSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
-				if (noiseValue < 0.005) {
-					tiles.emplace_back(0);       // water
-				} else if (noiseValue < 0.6) {
-					tiles.emplace_back(1);       // grass
+				float terrainValue = m_TerrainSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
+				if (terrainValue < 0.005) {
+					tiles.emplace_back(0.0f);       // water
+				} else if (terrainValue < 0.6) {
+					float grassValue = m_GrassTypeSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
+					if (grassValue < 0.33) {
+						tiles.emplace_back(1.0f);       // grass
+					} else if (grassValue < 0.66) {
+						tiles.emplace_back(1.1f);     // also grass
+					} else {
+						tiles.emplace_back(1.25f);    // also grass
+					}
 				} else {
-					tiles.emplace_back(2);       // dirt
+					tiles.emplace_back(2.0f);       // dirt
 				}
 			}
 		}
@@ -191,7 +203,17 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 		for (int y = height - 1; y > 0; --y) {
 			for (int x = 1; x < width; ++x) {
 				uint32_t index = ((height - y) * width) + x;
-				uint32_t tile = (27 * tiles[index - width - 1]) + (9 * tiles[index - width]) + (3 * tiles[index - 1]) + tiles[index];
+				uint32_t tile = (27 * static_cast<uint32_t>(tiles[index - width - 1])) + (9 * static_cast<uint32_t>(tiles[index - width])) + (3 * static_cast<uint32_t>(tiles[index - 1])) + static_cast<uint32_t>(tiles[index]);
+				if (tile == 40) {
+					float alternativeGrass = tiles[index - width - 1] + tiles[index - width] + tiles[index - 1] + tiles[index];
+					if (alternativeGrass < 4.2) {
+						tile = 40;
+					} else if (alternativeGrass < 4.5) {
+						tile = 81;
+					} else {
+						tile = 82;
+					}
+				}
 				Hazel::Renderer2D::DrawQuad({x + left + 0.5, y + bottom + 0.5}, {1, 1}, m_SubTextures[tile]);
 		 	}
 		}
