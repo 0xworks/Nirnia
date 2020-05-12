@@ -14,9 +14,9 @@ GroundLayer::GroundLayer()
 {
 	//
 	// loads of options here
-	m_TerrainSampler.SetFrequency(0.01f);                      // Default 0.1
+	m_TerrainSampler.SetFrequency(0.02f);                      // Default 0.1
 	m_TerrainSampler.SetInterp(FastNoise::Quintic);            // Default: Quintic
-	m_TerrainSampler.SetNoiseType(FastNoise::Simplex);         // Default: Simplex  (SimplexFractal is good for height-maps, but that's not really what we're after here)
+	m_TerrainSampler.SetNoiseType(FastNoise::SimplexFractal);  // Default: Simplex
 
 	// Fractal noise only
 	m_TerrainSampler.SetFractalOctaves(3);                     // Default 3
@@ -172,7 +172,7 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 				float terrainValue = m_TerrainSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
 				if (terrainValue < 0.005) {
 					tiles.emplace_back(0.0f);       // water
-				} else if (terrainValue < 0.6) {
+				} else if (terrainValue < 0.45) {
 					float grassValue = m_GrassTypeSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
 					if (grassValue < 0.33) {
 						tiles.emplace_back(1.0f);       // grass
