@@ -50,7 +50,7 @@ void GroundLayer::OnAttach() {
 	m_SubTextures[ 9] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {13, 11}, {128, 128});  // water grass water water
 	m_SubTextures[10] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {12, 11}, {128, 128});  // water grass water grass
 	m_SubTextures[11] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water grass water dirt  => X
-	m_SubTextures[12] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water grass grass water => X
+	m_SubTextures[12] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {13, 10}, {128, 128});  // water grass grass water
 	m_SubTextures[13] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {12, 10}, {128, 128});  // water grass grass grass
 	m_SubTextures[14] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water grass grass dirt  => X
 	m_SubTextures[15] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water grass dirt water  => X
@@ -66,7 +66,7 @@ void GroundLayer::OnAttach() {
 	m_SubTextures[25] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water dirt dirt grass   => X
 	m_SubTextures[26] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // water dirt dirt dirt    => X
 	m_SubTextures[27] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {14, 11}, {128, 128});  // grass water water water
-	m_SubTextures[28] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass water water grass => X
+	m_SubTextures[28] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {14, 10}, {128, 128});  // grass water water grass
 	m_SubTextures[29] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass water water dirt  => X
 	m_SubTextures[30] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {10, 11}, {128, 128});  // grass water grass water
 	m_SubTextures[31] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {10, 10}, {128, 128});  // grass water grass grass
@@ -90,7 +90,7 @@ void GroundLayer::OnAttach() {
 	m_SubTextures[49] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 5, 10}, {128, 128});  // grass dirt grass grass
 	m_SubTextures[50] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 5, 11}, {128, 128});  // grass dirt grass dirt
 	m_SubTextures[51] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass dirt dirt water   => X
-	m_SubTextures[52] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // grass dirt dirt grass   => X
+	m_SubTextures[52] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 9, 10}, {128, 128});  // grass dirt dirt grass
 	m_SubTextures[53] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 9, 11}, {128, 128});  // grass dirt dirt dirt
 	m_SubTextures[54] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt water water water  => X
 	m_SubTextures[55] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt water water grass  => X
@@ -106,7 +106,7 @@ void GroundLayer::OnAttach() {
 	m_SubTextures[65] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt grass water dirt   => X
 	m_SubTextures[66] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt grass grass water  => X
 	m_SubTextures[67] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 7, 10}, {128, 128});  // dirt grass grass grass
-	m_SubTextures[68] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt grass grass dirt  => X
+	m_SubTextures[68] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 8, 10}, {128, 128});  // dirt grass grass dirt
 	m_SubTextures[69] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 0,  0}, {128, 128});  // dirt grass dirt water  => X
 	m_SubTextures[70] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 7, 11}, {128, 128});  // dirt grass dirt grass
 	m_SubTextures[71] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 8, 11}, {128, 128});  // dirt grass dirt dirt
