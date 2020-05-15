@@ -41,6 +41,7 @@ private:
 
 	Hazel::Ref<Hazel::Texture2D> m_SpriteSheet;
 	std::vector<Hazel::Ref<Hazel::SubTexture2D>> m_SubTextures;
+	Hazel::Ref<Hazel::SubTexture2D> m_Tree;
 
 	float m_AspectRatio = 1.0f;
 };

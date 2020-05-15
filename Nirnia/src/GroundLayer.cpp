@@ -8,6 +8,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <imgui.h>
 
+#include <random>
 
 GroundLayer::GroundLayer()
 : Layer("Map")
@@ -124,6 +125,9 @@ void GroundLayer::OnAttach() {
 	m_SubTextures[81] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {3, 10}, {128, 128});  // grass grass grass grass
 	m_SubTextures[82] = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {4, 10}, {128, 128});  // grass grass grass grass
 
+	// Trees
+	m_Tree = Hazel::SubTexture2D::CreateFromCoords(m_SpriteSheet, {0, 1}, {128, 128}, {1, 2}); // large light green tree
+
 
 	// HACK: we need to remember width and height because there is currently no way to retrieve
 	//       these from the camera controller later.
@@ -160,6 +164,7 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 	int height = (top - bottom);
 
 	std::vector<float> tiles;
+	std::vector<float> trees;
 	tiles.reserve(width * height);
 	{
 		HZ_PROFILE_SCOPE("Generate map");
@@ -184,6 +189,16 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 				} else {
 					tiles.emplace_back(2.0f);       // dirt
 				}
+
+				if (terrainValue < 0.005) {
+					trees.emplace_back(0.0f);       // no tree
+				} else if (terrainValue < 0.4) {
+					trees.emplace_back(0.1f);
+				} else if (terrainValue < 0.6) {
+					trees.emplace_back(0.2f);
+				} else {
+					trees.emplace_back(0.1f);
+				}
 			}
 		}
 	}
@@ -200,6 +215,7 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 
 		Hazel::Renderer2D::BeginScene(m_CameraController->GetCamera());
 
+		// ground
 		for (int y = height - 1; y > 0; --y) {
 			for (int x = 1; x < width; ++x) {
 				uint32_t index = ((height - y) * width) + x;
@@ -215,7 +231,28 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 					}
 				}
 				Hazel::Renderer2D::DrawQuad({x + left + 0.5, y + bottom + 0.5}, {1, 1}, m_SubTextures[tile]);
-		 	}
+			}
+		}
+
+		// trees
+		std::mt19937 treeGenerator;
+		for (int y = height - 1; y > 0; --y) {
+			for (int x = 1; x < width; ++x) {
+				uint32_t index = ((height - y) * width) + x;
+				uint32_t tile = (27 * static_cast<uint32_t>(tiles[index - width - 1])) + (9 * static_cast<uint32_t>(tiles[index - width])) + (3 * static_cast<uint32_t>(tiles[index - 1])) + static_cast<uint32_t>(tiles[index]);
+
+				// tree cannot grow on a water tile (anything with index <= 39)
+				if (tile >= 40) {
+					float treeProbability = trees[index];
+					std::seed_seq seed {x + left, y + bottom};
+					treeGenerator.seed(seed);
+					if (treeGenerator() / (float)std::numeric_limits<uint32_t>::max() < treeProbability) {
+						float xOffset = treeGenerator() / (float)std::numeric_limits<uint32_t>::max();
+						float yOffset = treeGenerator() / (float)std::numeric_limits<uint32_t>::max();
+						Hazel::Renderer2D::DrawQuad({x + left + xOffset, y + bottom + 0.5f + yOffset, (height - (y + 0.5 + yOffset)) / static_cast<float>(height)}, {1, 2}, m_Tree);
+					}
+				}
+			}
 		}
 
 		Hazel::Renderer2D::EndScene();
