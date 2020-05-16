@@ -35,13 +35,15 @@ private:
 
 private:
 	FastNoise m_TerrainSampler;
-	FastNoise m_GrassTypeSampler;
+	FastNoise m_GrassSampler;
+	FastNoise m_TreeSampler;
 
 	Hazel::Scope<Hazel::OrthographicCameraController> m_CameraController;
 
 	Hazel::Ref<Hazel::Texture2D> m_SpriteSheet;
-	std::vector<Hazel::Ref<Hazel::SubTexture2D>> m_SubTextures;
-	Hazel::Ref<Hazel::SubTexture2D> m_Tree;
+	std::vector<Hazel::Ref<Hazel::SubTexture2D>> m_GroundTiles;
+	std::vector<Hazel::Ref<Hazel::SubTexture2D>> m_TreeTiles;
+	Hazel::Ref<Hazel::SubTexture2D> m_TreeShadow;
 
 	float m_AspectRatio = 1.0f;
 };
