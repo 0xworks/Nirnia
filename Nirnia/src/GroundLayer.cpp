@@ -177,7 +177,7 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 	// TODO: what if overflow an int?  (unlikely, but still...)
 	auto left = static_cast<int>(std::floor((-m_AspectRatio * zoom) + position.x - 1.0f));
 	auto right = static_cast<int>(std::ceil(m_AspectRatio * zoom + position.x + 1.0f));
-	auto bottom = static_cast<int>(std::floor(-zoom + position.y - 1.0f));
+	auto bottom = static_cast<int>(std::floor(-zoom + position.y - 2.0f));
 	auto top = static_cast<int>(std::ceil(zoom + position.y + 1.0f));
 
 	int width = (right - left);
@@ -186,9 +186,15 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 	std::vector<uint8_t> groundType;
 	std::vector<uint8_t> treeType;
 	std::vector<glm::vec3> treeCoords;
+	std::vector<glm::vec2> treeScale;
+	std::vector<glm::vec3> treeShadowCoords;
+	std::vector<glm::vec2> treeShadowSize;
 	groundType.reserve(width * height);
-	treeCoords.reserve(width * height);
 	treeType.reserve(width * height);
+	treeCoords.reserve(width * height);
+	treeScale.reserve(width * height);
+	treeShadowCoords.reserve(width * height);
+	treeShadowSize.reserve(width * height);
 	{
 		HZ_PROFILE_SCOPE("Generate map");
 
@@ -219,7 +225,7 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 				uint32_t groundTile = (27 * groundType[index - 1]) + (9 * groundType[index]) + (3 * groundType[index - width - 1]) + groundType[index - width];
 
 				// trees don't grow on water tiles (any tile <= 39)
-				if(groundTile > 39) {
+				if (groundTile == 40) {
 					float treeValue = m_TreeSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
 					Random treeRandomizer({x, y});
 					if (treeValue > 0.45f) {
@@ -227,16 +233,62 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 						if (treeRandomizer.Uniform0_1() < 0.3f) {
 							float xOffset = treeRandomizer.Uniform(0.2f, 0.8f);
 							float yOffset = treeRandomizer.Uniform(0.2f, 0.8f);
-							treeCoords.emplace_back(x - xOffset, y - yOffset + 1.0f, ((top - (y - yOffset)) / height / 10.0f) - 0.8f);
+							float scale = treeRandomizer.Uniform(0.8f, 1.2f);
 							treeType.emplace_back(0);
+							treeCoords.emplace_back(x - xOffset, y - yOffset + scale, ((top - (y - yOffset)) / height / 10.0f) - 0.8f);
+							treeScale.emplace_back(scale, 2.0f * scale);
+							treeShadowCoords.emplace_back(x - xOffset, y - yOffset + 0.36 * scale, ((top - (y - yOffset)) / height / 10.0f) - 0.9f);
+							treeShadowSize.emplace_back(1.2f * scale, 1.2f * scale);
 						}
 					} else if (treeValue > 0.0f) {
 						// small tree
 						if (treeRandomizer.Uniform0_1() < 0.2f) {
 							float xOffset = treeRandomizer.Uniform(0.2f, 0.8f);
 							float yOffset = treeRandomizer.Uniform(0.2f, 0.8f);
-							treeCoords.emplace_back(x - xOffset, y - yOffset + 1.0f, ((top - (y - yOffset)) / height / 10.0f) - 0.8f);
+							float scale = treeRandomizer.Uniform(0.8f, 1.2f);
 							treeType.emplace_back(1);
+							treeCoords.emplace_back(x - xOffset, y - yOffset + scale, ((top - (y - yOffset)) / height / 10.0f) - 0.8f);
+							treeScale.emplace_back(scale, 2.0f * scale);
+							treeShadowCoords.emplace_back(x - xOffset, y - yOffset + 0.3f * scale, ((top - (y - yOffset)) / height / 10.0f) - 0.9f);
+							treeShadowSize.emplace_back(scale, scale);
+						}
+					}
+				} else if (groundTile > 40) {
+					float treeValue = m_TreeSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
+					Random treeRandomizer({x, y});
+					if (treeValue > 0.7f) {
+						// small orange shrub
+						if (treeRandomizer.Uniform0_1() < 0.6f) {
+							float xOffset = treeRandomizer.Uniform0_1();
+							float yOffset = treeRandomizer.Uniform0_1();
+							float scale = 1.0f;
+							treeType.emplace_back(9);
+							treeCoords.emplace_back(x - xOffset, y - yOffset, ((top - (y - yOffset)) / height / 10.0f) - 0.8f);
+							treeScale.emplace_back(scale, scale);
+							treeShadowCoords.emplace_back(x - xOffset, y - yOffset, ((top - (y - yOffset)) / height / 10.0f) - 0.9f);
+							treeShadowSize.emplace_back(scale, scale);
+						}
+					} else if (treeValue > 0.0f) {
+						// orange shrubs
+						if (treeRandomizer.Uniform0_1() < 0.5f) {
+							float xOffset = treeRandomizer.Uniform0_1();
+							float yOffset = treeRandomizer.Uniform0_1();
+							float scale = treeRandomizer.Uniform(0.8f, 1.2f);
+							treeType.emplace_back(8);
+							treeCoords.emplace_back(x - xOffset, y - yOffset, ((top - (y - yOffset)) / height / 10.0f) - 0.8f);
+							treeScale.emplace_back(scale, scale);
+							treeShadowCoords.emplace_back(x - xOffset, y - yOffset - 0.1f * scale, ((top - (y - yOffset)) / height / 10.0f) - 0.9f);
+							treeShadowSize.emplace_back(scale, scale);
+							if (treeRandomizer.Uniform0_1() < 0.5f) {
+								float xOffset = treeRandomizer.Uniform0_1();
+								float yOffset = treeRandomizer.Uniform0_1();
+								float scale = treeRandomizer.Uniform(0.8f, 1.2f);
+								treeType.emplace_back(9);
+								treeCoords.emplace_back(x - xOffset, y - yOffset, ((top - (y - yOffset)) / height / 10.0f) - 0.8f);
+								treeScale.emplace_back(scale, scale);
+								treeShadowCoords.emplace_back(x - xOffset, y - yOffset - 0.21f * scale, ((top - (y - yOffset)) / height / 10.0f) - 0.9f);
+								treeShadowSize.emplace_back(0.7f * scale, 0.7f * scale);
+							}
 						}
 					}
 				}
@@ -276,15 +328,13 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 		}
 
 		// Tree shadows
-		glm::vec3 offset = {0.0f, -0.7f, -0.1f};
-		for (auto treeCoord : treeCoords) {
-			Hazel::Renderer2D::DrawQuad(treeCoord + offset, {1, 1}, m_TreeShadow);
+		for (size_t t = 0; t < treeCoords.size(); ++t) {
+			Hazel::Renderer2D::DrawQuad(treeShadowCoords[t], treeShadowSize[t], m_TreeShadow);
 		}
 
 		// Trees
-		offset = {0.0f, 0.0f, -0.8f};
 		for(size_t t = 0; t < treeCoords.size(); ++t) {
-			Hazel::Renderer2D::DrawQuad(treeCoords[t], {1, 2}, m_TreeTiles[treeType[t]]);
+			Hazel::Renderer2D::DrawQuad(treeCoords[t], treeScale[t], m_TreeTiles[treeType[t]]);
 		}
 
 
