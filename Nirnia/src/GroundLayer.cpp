@@ -36,7 +36,7 @@ GroundLayer::GroundLayer()
 	m_TreeSampler.SetNoiseType(FastNoise::SimplexFractal);
 	m_TreeSampler.SetFrequency(0.02f);
 
-	// note: defer creation of camera controller until OnAttach(), so we know the correct window size.
+	// note: defer creation of camera until OnAttach(), so we know the correct window size.
 
 }
 
@@ -152,7 +152,7 @@ void GroundLayer::OnAttach() {
 
 	// Player sprites
 	m_PlayerSprites.resize(24);
-	m_PlayerSprites[ 0] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {0, 2}, {80, 110}, {-1, 1}); // idle 1
+	m_PlayerSprites[ 0] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {0, 2}, {80, 110}, {1, 1}); // idle 1
 	m_PlayerSprites[ 1] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {1, 2}, {80, 110}, {1, 1});
 	m_PlayerSprites[ 2] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {2, 2}, {80, 110}, {1, 1});
 	m_PlayerSprites[ 3] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {3, 2}, {80, 110}, {1, 1});
@@ -161,8 +161,8 @@ void GroundLayer::OnAttach() {
 	m_PlayerSprites[ 6] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {6, 2}, {80, 110}, {1, 1});
 	m_PlayerSprites[ 7] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {7, 2}, {80, 110}, {1, 1});
 	m_PlayerSprites[ 8] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {8, 2}, {80, 110}, {1, 1});
-	m_PlayerSprites[ 9] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {0, 1}, {80, 110}, {1, 1});
-	m_PlayerSprites[10] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {1, 1}, {80, 110}, {1, 1});
+	m_PlayerSprites[ 9] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {0, 1}, {80, 110}, {1, 1}); // walk
+	m_PlayerSprites[10] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {1, 1}, {80, 110}, {1, 1}); // walk
 	m_PlayerSprites[11] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {2, 1}, {80, 110}, {1, 1});
 	m_PlayerSprites[12] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {3, 1}, {80, 110}, {1, 1});
 	m_PlayerSprites[13] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {4, 1}, {80, 110}, {1, 1});
@@ -173,22 +173,22 @@ void GroundLayer::OnAttach() {
 	m_PlayerSprites[18] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {0, 0}, {80, 110}, {1, 1});
 	m_PlayerSprites[19] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {1, 0}, {80, 110}, {1, 1});
 	m_PlayerSprites[20] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {2, 0}, {80, 110}, {1, 1});
-	m_PlayerSprites[21] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {3, 0}, {80, 110}, {1, 1});
-	m_PlayerSprites[22] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {4, 0}, {80, 110}, {1, 1});
-	m_PlayerSprites[23] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {5, 0}, {80, 110}, {-1, 1}); // idle 2
+	m_PlayerSprites[21] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {3, 0}, {80, 110}, {1, 1}); // down
+	m_PlayerSprites[22] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {4, 0}, {80, 110}, {1, 1}); // up
+	m_PlayerSprites[23] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {5, 0}, {80, 110}, {1, 1}); // idle 2
 
-	m_PlayerAnimations = {
-		{0, 0, 0, 0, 0, 23, 23, 23, 23, 23} // idle
-	};
+	m_PlayerSize = glm::vec2{80, 110} / glm::vec2{128, 128};
 
-	// HACK: we need to remember width and height because there is currently no way to retrieve
-	//       these from the camera controller later.
+	m_PlayerAnimations.resize(static_cast<int>(PlayerState::NumStates));
+
+	m_PlayerAnimations[static_cast<int>(PlayerState::Idle)] = {0, 0, 0, 0, 0, 23, 23, 23, 23, 23};
+	m_PlayerAnimations[static_cast<int>(PlayerState::WalkLeft)] = {9, 9, 9, 9, 10, 10, 10, 10};
+	m_PlayerAnimations[static_cast<int>(PlayerState::WalkRight)] = {9, 9, 9, 9, 10, 10, 10, 10};
+	m_PlayerAnimations[static_cast<int>(PlayerState::WalkUp)] = {22};
+	m_PlayerAnimations[static_cast<int>(PlayerState::WalkDown)] = {21};
+
 	m_AspectRatio = static_cast<float>(Hazel::Application::Get().GetWindow().GetWidth()) / static_cast<float>(Hazel::Application::Get().GetWindow().GetHeight());
-	m_CameraController = Hazel::CreateScope<Hazel::OrthographicCameraController>(m_AspectRatio);
-
-	float zoom = 4.0f;
-	m_CameraController->SetZoomLevel(zoom);
-	m_CameraController->GetCamera().SetProjection(-m_AspectRatio * zoom, m_AspectRatio * zoom, -zoom, zoom); // BUG: camera controller does not do this when you SetZoomLevel()
+	m_Camera = Hazel::CreateScope<Hazel::OrthographicCamera>(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
 }
 
 
@@ -200,17 +200,17 @@ void GroundLayer::OnDetach() {
 void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 	HZ_PROFILE_FUNCTION();
 
-	// Update
-	m_CameraController->OnUpdate(ts);
+	UpdatePlayer(ts);
 
-	float zoom = m_CameraController->GetZoomLevel();
-	glm::vec3 position = m_CameraController->GetCamera().GetPosition();
+	glm::vec3 position = {m_PlayerPos, 0.0f};
+
+	m_Camera->SetPosition(position);
 
 	// TODO: what if overflow an int?  (unlikely, but still...)
-	auto left = static_cast<int>(std::floor((-m_AspectRatio * zoom) + position.x - 1.0f));
-	auto right = static_cast<int>(std::ceil(m_AspectRatio * zoom + position.x + 1.0f));
-	auto bottom = static_cast<int>(std::floor(-zoom + position.y - 2.0f));
-	auto top = static_cast<int>(std::ceil(zoom + position.y + 1.0f));
+	auto left = static_cast<int>(std::floor((-m_AspectRatio * m_Zoom) + position.x - 1.0f));
+	auto right = static_cast<int>(std::ceil(m_AspectRatio * m_Zoom + position.x + 1.0f));
+	auto bottom = static_cast<int>(std::floor(-m_Zoom + position.y - 2.0f));
+	auto top = static_cast<int>(std::ceil(m_Zoom + position.y + 1.0f));
 
 	int width = (right - left);
 	int height = (top - bottom);
@@ -334,7 +334,7 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 		m_AnimationAccumulator += ts;
 		if (m_AnimationAccumulator > 0.1f) {
 			m_AnimationAccumulator = 0.0f;
-			m_PlayerFrame = (++m_PlayerFrame) % m_PlayerAnimations[m_PlayerAnimation].size();
+			m_PlayerFrame = (++m_PlayerFrame) % m_PlayerAnimations[static_cast<int>(m_PlayerState)].size();
 		}
 	}
 
@@ -348,7 +348,7 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 		Hazel::RenderCommand::SetClearColor({0.1f, 0.1f, 0.1f, 1});
 		Hazel::RenderCommand::Clear();
 
-		Hazel::Renderer2D::BeginScene(m_CameraController->GetCamera());
+		Hazel::Renderer2D::BeginScene(*m_Camera);
 
 		// Ground
 		for (int y = 1; y < height; ++y) {
@@ -380,8 +380,8 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 		}
 
 		// Player
-		glm::vec3 playerPos = {0.0f, 0.0f, ((top - (0.0f - 0.5f)) / height / 10.0f) - 0.8f};
-		Hazel::Renderer2D::DrawQuad(playerPos, {0.625f, 0.859f}, m_PlayerSprites[m_PlayerAnimations[m_PlayerAnimation][m_PlayerFrame]]);
+		glm::vec3 playerPos = {m_PlayerPos, ((top - m_PlayerPos.y - 0.5f) / height / 10.0f) - 0.8f};
+		Hazel::Renderer2D::DrawQuad(playerPos, m_PlayerSize, m_PlayerSprites[m_PlayerAnimations[static_cast<int>(m_PlayerState)][m_PlayerFrame]]);
 
 		Hazel::Renderer2D::EndScene();
 	}
@@ -394,6 +394,37 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 	char buffer[64];
 	sprintf_s(buffer, 64, "Average frame render time: %8.5f (%5.0f fps)", averageRenderTime, averageFPS);
 	glfwSetWindowTitle((GLFWwindow*)Hazel::Application::Get().GetWindow().GetNativeWindow(), buffer);
+}
+
+
+void GroundLayer::UpdatePlayer(Hazel::Timestep ts) {
+	HZ_PROFILE_FUNCTION();
+
+	constexpr float moveSpeed = 1.5f;
+
+	PlayerState lastState = m_PlayerState;
+	m_PlayerState = PlayerState::Idle;
+	if (Hazel::Input::IsKeyPressed(HZ_KEY_A)) {
+		m_PlayerPos.x -= ts * moveSpeed;
+		m_PlayerState = PlayerState::WalkLeft;
+		m_PlayerSize = {-80.0f / 128.0f, 110.0f / 128.0f};
+	} else if (Hazel::Input::IsKeyPressed(HZ_KEY_D)) {
+		m_PlayerPos.x += ts * moveSpeed;
+		m_PlayerState = PlayerState::WalkRight;
+		m_PlayerSize = {80.0f / 128.0f, 110.0f / 128.0f};
+	}
+
+	if (Hazel::Input::IsKeyPressed(HZ_KEY_W)) {
+		m_PlayerPos.y += ts * moveSpeed;
+		m_PlayerState = PlayerState::WalkUp;
+	} else if (Hazel::Input::IsKeyPressed(HZ_KEY_S)) {
+		m_PlayerPos.y -= ts * moveSpeed;
+		m_PlayerState = PlayerState::WalkDown;
+	}
+
+	if (m_PlayerState != lastState) {
+		m_PlayerFrame = 0;
+	}
 }
 
 
@@ -415,13 +446,11 @@ void GroundLayer::OnEvent(Hazel::Event& e) {
 
 	Hazel::EventDispatcher dispatcher(e);
 	dispatcher.Dispatch<Hazel::WindowResizeEvent>(HZ_BIND_EVENT_FN(GroundLayer::OnWindowResize));
-
-	m_CameraController->OnEvent(e);
 }
 
 
-// HACK: we need this because there is currently no way to retrieve width/height from the camera controller
 bool GroundLayer::OnWindowResize(Hazel::WindowResizeEvent& e) {
 	m_AspectRatio = static_cast<float>(e.GetWidth()) / static_cast<float>(e.GetHeight());
+	m_Camera->SetProjection(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
 	return false;
 }
