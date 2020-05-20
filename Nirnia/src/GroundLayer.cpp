@@ -44,7 +44,7 @@ GroundLayer::GroundLayer()
 void GroundLayer::OnAttach() {
 	HZ_PROFILE_FUNCTION();
 	m_BackgroundSheet = Hazel::Texture2D::Create("assets/textures/RPGpack_sheet_2X.png");
-	m_PlayerSheet = Hazel::Texture2D::Create("assets/textures/player_tilesheet.png");
+	m_PlayerSheet = Hazel::Texture2D::Create("assets/textures/player_sheet.png");
 
 	m_GroundTiles.resize(83);                                                                        //  TL    TR    BL    BR
 	m_GroundTiles[ 0] = Hazel::SubTexture2D::CreateFromCoords(m_BackgroundSheet, {11, 11}, {128, 128});  // water water water water
@@ -152,40 +152,24 @@ void GroundLayer::OnAttach() {
 
 	// Player sprites
 	m_PlayerSprites.resize(24);
-	m_PlayerSprites[ 0] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {0, 2}, {80, 110}, {1, 1}); // idle 1
-	m_PlayerSprites[ 1] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {1, 2}, {80, 110}, {1, 1});
-	m_PlayerSprites[ 2] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {2, 2}, {80, 110}, {1, 1});
-	m_PlayerSprites[ 3] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {3, 2}, {80, 110}, {1, 1});
-	m_PlayerSprites[ 4] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {4, 2}, {80, 110}, {1, 1});
-	m_PlayerSprites[ 5] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {5, 2}, {80, 110}, {1, 1});
-	m_PlayerSprites[ 6] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {6, 2}, {80, 110}, {1, 1});
-	m_PlayerSprites[ 7] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {7, 2}, {80, 110}, {1, 1});
-	m_PlayerSprites[ 8] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {8, 2}, {80, 110}, {1, 1});
-	m_PlayerSprites[ 9] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {0, 1}, {80, 110}, {1, 1}); // walk
-	m_PlayerSprites[10] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {1, 1}, {80, 110}, {1, 1}); // walk
-	m_PlayerSprites[11] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {2, 1}, {80, 110}, {1, 1});
-	m_PlayerSprites[12] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {3, 1}, {80, 110}, {1, 1});
-	m_PlayerSprites[13] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {4, 1}, {80, 110}, {1, 1});
-	m_PlayerSprites[14] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {5, 1}, {80, 110}, {1, 1});
-	m_PlayerSprites[15] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {6, 1}, {80, 110}, {1, 1});
-	m_PlayerSprites[16] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {7, 1}, {80, 110}, {1, 1});
-	m_PlayerSprites[17] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {8, 1}, {80, 110}, {1, 1});
-	m_PlayerSprites[18] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {0, 0}, {80, 110}, {1, 1});
-	m_PlayerSprites[19] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {1, 0}, {80, 110}, {1, 1});
-	m_PlayerSprites[20] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {2, 0}, {80, 110}, {1, 1});
-	m_PlayerSprites[21] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {3, 0}, {80, 110}, {1, 1}); // down
-	m_PlayerSprites[22] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {4, 0}, {80, 110}, {1, 1}); // up
-	m_PlayerSprites[23] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {5, 0}, {80, 110}, {1, 1}); // idle 2
+	m_PlayerSprites[ 0] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {0, 0}, {93, 120}, {1, 1});
+	m_PlayerSprites[ 1] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {1, 0}, {93, 120}, {1, 1});
+	m_PlayerSprites[ 2] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {2, 0}, {93, 120}, {1, 1});
+	m_PlayerSprites[ 3] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {3, 0}, {93, 120}, {1, 1});
+	m_PlayerSprites[ 4] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {4, 0}, {93, 120}, {1, 1});
+	m_PlayerSprites[ 5] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {5, 0}, {93, 120}, {1, 1});
+	m_PlayerSprites[ 6] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {6, 0}, {93, 120}, {1, 1});
+	m_PlayerSprites[ 7] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {7, 0}, {93, 120}, {1, 1});
 
-	m_PlayerSize = glm::vec2{80, 110} / glm::vec2{128, 128};
+	m_PlayerSize = glm::vec2{93, 120} / glm::vec2{128, 128};
 
 	m_PlayerAnimations.resize(static_cast<int>(PlayerState::NumStates));
 
-	m_PlayerAnimations[static_cast<int>(PlayerState::Idle)] = {0, 0, 0, 0, 0, 23, 23, 23, 23, 23};
-	m_PlayerAnimations[static_cast<int>(PlayerState::WalkLeft)] = {9, 9, 9, 9, 10, 10, 10, 10};
-	m_PlayerAnimations[static_cast<int>(PlayerState::WalkRight)] = {9, 9, 9, 9, 10, 10, 10, 10};
-	m_PlayerAnimations[static_cast<int>(PlayerState::WalkUp)] = {22};
-	m_PlayerAnimations[static_cast<int>(PlayerState::WalkDown)] = {21};
+	m_PlayerAnimations[static_cast<int>(PlayerState::Idle)] = {0};
+	m_PlayerAnimations[static_cast<int>(PlayerState::WalkLeft)] = {0, 1, 2, 3, 4, 5, 6, 7};
+	m_PlayerAnimations[static_cast<int>(PlayerState::WalkRight)] = {0, 1, 2, 3, 4, 5, 6, 7};
+	m_PlayerAnimations[static_cast<int>(PlayerState::WalkUp)] = {0};
+	m_PlayerAnimations[static_cast<int>(PlayerState::WalkDown)] = {0};
 
 	m_AspectRatio = static_cast<float>(Hazel::Application::Get().GetWindow().GetWidth()) / static_cast<float>(Hazel::Application::Get().GetWindow().GetHeight());
 	m_Camera = Hazel::CreateScope<Hazel::OrthographicCamera>(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
@@ -407,11 +391,11 @@ void GroundLayer::UpdatePlayer(Hazel::Timestep ts) {
 	if (Hazel::Input::IsKeyPressed(HZ_KEY_A)) {
 		m_PlayerPos.x -= ts * moveSpeed;
 		m_PlayerState = PlayerState::WalkLeft;
-		m_PlayerSize = {-80.0f / 128.0f, 110.0f / 128.0f};
+		m_PlayerSize = {-93.0f / 128.0f, 120.0f / 128.0f};
 	} else if (Hazel::Input::IsKeyPressed(HZ_KEY_D)) {
 		m_PlayerPos.x += ts * moveSpeed;
 		m_PlayerState = PlayerState::WalkRight;
-		m_PlayerSize = {80.0f / 128.0f, 110.0f / 128.0f};
+		m_PlayerSize = {93.0f / 128.0f, 120.0f / 128.0f};
 	}
 
 	if (Hazel::Input::IsKeyPressed(HZ_KEY_W)) {
