@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PlayerState.h"
+#include "Random.h"
 
 #include <Hazel/Core/Layer.h>
 #include <Hazel/Renderer/OrthographicCamera.h>
@@ -38,6 +39,7 @@ private:
 	void UpdatePlayer(Hazel::Timestep ts);
 
 private:
+	Random m_Random;
 	FastNoise m_TerrainSampler;
 	FastNoise m_GrassSampler;
 	FastNoise m_TreeSampler;

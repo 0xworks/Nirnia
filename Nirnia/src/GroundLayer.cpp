@@ -1,5 +1,4 @@
 #include "GroundLayer.h"
-#include "Random.h"
 
 #include "Hazel/Core/Application.h"
 #include "Hazel/Renderer/RenderCommand.h"
@@ -151,21 +150,34 @@ void GroundLayer::OnAttach() {
 	m_TreeShadow = Hazel::SubTexture2D::CreateFromCoords(m_BackgroundSheet, {15, 11}, {128, 128}, {1, 1});
 
 	// Player sprites
-	m_PlayerSprites.resize(24);
-	m_PlayerSprites[ 0] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {0, 0}, {93, 120}, {1, 1});
-	m_PlayerSprites[ 1] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {1, 0}, {93, 120}, {1, 1});
-	m_PlayerSprites[ 2] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {2, 0}, {93, 120}, {1, 1});
-	m_PlayerSprites[ 3] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {3, 0}, {93, 120}, {1, 1});
-	m_PlayerSprites[ 4] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {4, 0}, {93, 120}, {1, 1});
-	m_PlayerSprites[ 5] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {5, 0}, {93, 120}, {1, 1});
-	m_PlayerSprites[ 6] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {6, 0}, {93, 120}, {1, 1});
-	m_PlayerSprites[ 7] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {7, 0}, {93, 120}, {1, 1});
+	m_PlayerSprites.resize(16);
+	m_PlayerSprites[ 0] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {0, 1}, {93, 120}, {1, 1});
+	m_PlayerSprites[ 1] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {1, 1}, {93, 120}, {1, 1});
+	m_PlayerSprites[ 2] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {2, 1}, {93, 120}, {1, 1});
+	m_PlayerSprites[ 3] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {3, 1}, {93, 120}, {1, 1});
+	m_PlayerSprites[ 4] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {4, 1}, {93, 120}, {1, 1});
+	m_PlayerSprites[ 5] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {5, 1}, {93, 120}, {1, 1});
+	m_PlayerSprites[ 6] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {6, 1}, {93, 120}, {1, 1});
+	m_PlayerSprites[ 7] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {7, 1}, {93, 120}, {1, 1});
+
+	m_PlayerSprites[ 8] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {0, 0}, {93, 120}, {1, 1});
+	m_PlayerSprites[ 9] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {1, 0}, {93, 120}, {1, 1});
+	m_PlayerSprites[10] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {2, 0}, {93, 120}, {1, 1});
+	m_PlayerSprites[11] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {3, 0}, {93, 120}, {1, 1});
+	m_PlayerSprites[12] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {4, 0}, {93, 120}, {1, 1});
+	m_PlayerSprites[13] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {5, 0}, {93, 120}, {1, 1});
+	m_PlayerSprites[14] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {6, 0}, {93, 120}, {1, 1});
+	m_PlayerSprites[15] = Hazel::SubTexture2D::CreateFromCoords(m_PlayerSheet, {7, 0}, {93, 120}, {1, 1});
+
 
 	m_PlayerSize = glm::vec2{93, 120} / glm::vec2{128, 128};
 
 	m_PlayerAnimations.resize(static_cast<int>(PlayerState::NumStates));
 
-	m_PlayerAnimations[static_cast<int>(PlayerState::Idle)] = {0};
+	m_PlayerAnimations[static_cast<int>(PlayerState::Idle0)] = {8, 8, 8, 8, 8, 8, 8, 8};
+	m_PlayerAnimations[static_cast<int>(PlayerState::Idle1)] = {8, 9, 10, 9, 8, 8, 8, 8};
+	m_PlayerAnimations[static_cast<int>(PlayerState::Idle2)] = {12, 12, 13, 13, 12, 12, 13, 13};
+	m_PlayerAnimations[static_cast<int>(PlayerState::Idle3)] = {12, 14, 15, 11, 12, 12, 13, 13};
 	m_PlayerAnimations[static_cast<int>(PlayerState::WalkLeft)] = {0, 1, 2, 3, 4, 5, 6, 7};
 	m_PlayerAnimations[static_cast<int>(PlayerState::WalkRight)] = {0, 1, 2, 3, 4, 5, 6, 7};
 	m_PlayerAnimations[static_cast<int>(PlayerState::WalkUp)] = {0};
@@ -318,7 +330,17 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 		m_AnimationAccumulator += ts;
 		if (m_AnimationAccumulator > 0.1f) {
 			m_AnimationAccumulator = 0.0f;
-			m_PlayerFrame = (++m_PlayerFrame) % m_PlayerAnimations[static_cast<int>(m_PlayerState)].size();
+			m_PlayerFrame = ++m_PlayerFrame % m_PlayerAnimations[static_cast<int>(m_PlayerState)].size();
+			if (IsIdle(m_PlayerState) && (m_PlayerFrame == 0)) {
+				if (m_Random.Uniform0_1() < 0.25f) {
+					m_PlayerState = SetBlinkState(m_PlayerState);
+				} else {
+					m_PlayerState = ClearBlinkState(m_PlayerState);
+				}
+				if (m_Random.Uniform0_1() < 1.0f / 8.0f) {
+					m_PlayerState = SwapFootTapState(m_PlayerState);
+				}
+			} 
 		}
 	}
 
@@ -364,7 +386,7 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 		}
 
 		// Player
-		glm::vec3 playerPos = {m_PlayerPos, ((top - m_PlayerPos.y - 0.5f) / height / 10.0f) - 0.8f};
+		glm::vec3 playerPos = {m_PlayerPos, ((top - m_PlayerPos.y + 0.3f) / height / 10.0f) - 0.8f};
 		Hazel::Renderer2D::DrawQuad(playerPos, m_PlayerSize, m_PlayerSprites[m_PlayerAnimations[static_cast<int>(m_PlayerState)][m_PlayerFrame]]);
 
 		Hazel::Renderer2D::EndScene();
@@ -386,28 +408,30 @@ void GroundLayer::UpdatePlayer(Hazel::Timestep ts) {
 
 	constexpr float moveSpeed = 1.5f;
 
-	PlayerState lastState = m_PlayerState;
-	m_PlayerState = PlayerState::Idle;
+	PlayerState newState = PlayerState::Idle0;
 	if (Hazel::Input::IsKeyPressed(HZ_KEY_A)) {
 		m_PlayerPos.x -= ts * moveSpeed;
-		m_PlayerState = PlayerState::WalkLeft;
 		m_PlayerSize = {-93.0f / 128.0f, 120.0f / 128.0f};
+		newState = PlayerState::WalkLeft;
 	} else if (Hazel::Input::IsKeyPressed(HZ_KEY_D)) {
 		m_PlayerPos.x += ts * moveSpeed;
-		m_PlayerState = PlayerState::WalkRight;
 		m_PlayerSize = {93.0f / 128.0f, 120.0f / 128.0f};
+		newState = PlayerState::WalkRight;
 	}
 
 	if (Hazel::Input::IsKeyPressed(HZ_KEY_W)) {
 		m_PlayerPos.y += ts * moveSpeed;
-		m_PlayerState = PlayerState::WalkUp;
+		newState = PlayerState::WalkUp;
 	} else if (Hazel::Input::IsKeyPressed(HZ_KEY_S)) {
 		m_PlayerPos.y -= ts * moveSpeed;
-		m_PlayerState = PlayerState::WalkDown;
+		newState = PlayerState::WalkDown;
 	}
 
-	if (m_PlayerState != lastState) {
-		m_PlayerFrame = 0;
+	if (newState != m_PlayerState) {
+		if (!IsIdle(newState) || !IsIdle(m_PlayerState)) {
+			m_PlayerState = newState;
+			m_PlayerFrame = 0;
+		}
 	}
 }
 
