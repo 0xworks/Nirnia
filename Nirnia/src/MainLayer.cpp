@@ -1,4 +1,4 @@
-#include "GroundLayer.h"
+#include "MainLayer.h"
 
 #include "Hazel/Core/Application.h"
 #include "Hazel/Renderer/RenderCommand.h"
@@ -10,7 +10,7 @@
 
 #include <random>
 
-GroundLayer::GroundLayer()
+MainLayer::MainLayer()
 : Layer("Map")
 {
 	//
@@ -40,7 +40,7 @@ GroundLayer::GroundLayer()
 }
 
 
-void GroundLayer::OnAttach() {
+void MainLayer::OnAttach() {
 	HZ_PROFILE_FUNCTION();
 	m_BackgroundSheet = Hazel::Texture2D::Create("assets/textures/RPGpack_sheet_2X.png");
 	m_PlayerSheet = Hazel::Texture2D::Create("assets/textures/player_sheet.png");
@@ -205,12 +205,12 @@ void GroundLayer::OnAttach() {
 }
 
 
-void GroundLayer::OnDetach() {
+void MainLayer::OnDetach() {
 	HZ_PROFILE_FUNCTION();
 }
 
 
-void GroundLayer::OnUpdate(Hazel::Timestep ts) {
+void MainLayer::OnUpdate(Hazel::Timestep ts) {
 	HZ_PROFILE_FRAMEMARKER();
 	HZ_PROFILE_FUNCTION();
 
@@ -421,7 +421,7 @@ void GroundLayer::OnUpdate(Hazel::Timestep ts) {
 }
 
 
-void GroundLayer::UpdatePlayer(Hazel::Timestep ts) {
+void MainLayer::UpdatePlayer(Hazel::Timestep ts) {
 	HZ_PROFILE_FUNCTION();
 
 	constexpr float moveSpeed = 1.5f;
@@ -454,7 +454,7 @@ void GroundLayer::UpdatePlayer(Hazel::Timestep ts) {
 }
 
 
-void GroundLayer::OnImGuiRender() {
+void MainLayer::OnImGuiRender() {
 	HZ_PROFILE_FUNCTION();
 
 	ImGui::Begin("Stats");
@@ -468,14 +468,14 @@ void GroundLayer::OnImGuiRender() {
 }
 
 
-void GroundLayer::OnEvent(Hazel::Event& e) {
+void MainLayer::OnEvent(Hazel::Event& e) {
 
 	Hazel::EventDispatcher dispatcher(e);
-	dispatcher.Dispatch<Hazel::WindowResizeEvent>(HZ_BIND_EVENT_FN(GroundLayer::OnWindowResize));
+	dispatcher.Dispatch<Hazel::WindowResizeEvent>(HZ_BIND_EVENT_FN(MainLayer::OnWindowResize));
 }
 
 
-bool GroundLayer::OnWindowResize(Hazel::WindowResizeEvent& e) {
+bool MainLayer::OnWindowResize(Hazel::WindowResizeEvent& e) {
 	m_AspectRatio = static_cast<float>(e.GetWidth()) / static_cast<float>(e.GetHeight());
 	m_Camera->SetProjection(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
 	return false;

@@ -18,11 +18,11 @@
 
 #include <vector>
 
-class GroundLayer : public Hazel::Layer
+class MainLayer : public Hazel::Layer
 {
 public:
-	GroundLayer();
-	virtual ~GroundLayer() = default;
+	MainLayer();
+	virtual ~MainLayer() = default;
 
 	virtual void OnAttach() override;
 	virtual void OnDetach() override;
