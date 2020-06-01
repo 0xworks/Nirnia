@@ -16,6 +16,9 @@
 
 #include <glm/glm.hpp>
 
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -63,7 +66,13 @@ private:
 	void InitPlayer();
 	void InitCamera();
 	void InitMap();
+	
+	// Submits work to the chunk generator and returns immediately
 	void GenerateMapChunk(const int i, const int j);
+
+	// Generates the map chunks (on a worker thread)
+	void ChunkGenerator();
+
 	bool OnWindowResize(Hazel::WindowResizeEvent& e);
 
 	void UpdatePlayer(Hazel::Timestep ts);
@@ -86,6 +95,12 @@ private:
 
 	std::vector<Hazel::Ref<Hazel::SubTexture2D>> m_PlayerSprites;
 	std::vector<std::vector<uint8_t>> m_PlayerAnimations;
+
+	bool m_StopThreads;                                           // Setting this to true will terminate helper threads (e.g. the Chunk Generator thread)
+	std::thread m_ChunkGenerator;                                 // Thread is started in OnAttach(), and runs until m_StopThreads is true.  Need to store this thread handle so that OnDetach() can wait for exit.
+	HZ_PROFILE_LOCK(std::mutex, m_ChunkMutex, "Chunk Mutex");     // Synch access to chunk data
+	std::condition_variable_any m_ChunkCV;                        // Notified when there are some chunks that require generation
+	std::unordered_set<std::pair<int, int>> m_ChunksToGenerate;   // "queue" of chunks to generate. (implemented as a set.  It doesn't matter what order we do them in, and unordered_set makes it easy and efficient to prevent adding same chunk more than once)
 
 	uint32_t m_ChunkWidth;
 	uint32_t m_ChunkHeight;

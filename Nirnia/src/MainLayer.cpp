@@ -42,6 +42,10 @@ MainLayer::MainLayer()
 
 void MainLayer::OnAttach() {
 	HZ_PROFILE_FUNCTION();
+
+	m_StopThreads = false;
+	m_ChunkGenerator = std::thread(&MainLayer::ChunkGenerator, this);
+
 	InitGroundTiles();
 	InitPlayer();
 	InitCamera();
@@ -51,6 +55,15 @@ void MainLayer::OnAttach() {
 
 void MainLayer::OnDetach() {
 	HZ_PROFILE_FUNCTION();
+	if (m_ChunkGenerator.joinable()) {
+		{
+			std::lock_guard lock(m_ChunkMutex);
+			HZ_PROFILE_LOCKMARKER(m_ChunkMutex);
+			m_StopThreads = true;
+		}
+		m_ChunkCV.notify_one();
+		m_ChunkGenerator.join();
+	}
 }
 
 
@@ -233,7 +246,7 @@ void MainLayer::InitCamera() {
 	auto left = static_cast<int>(std::floor((-m_AspectRatio * m_Zoom) + m_PlayerPos.x - 1.0f));
 	auto right = static_cast<int>(std::ceil(m_AspectRatio * m_Zoom + m_PlayerPos.x + 1.0f));
 	auto bottom = static_cast<int>(std::floor(-m_Zoom + m_PlayerPos.y - 2.0f));
-	auto top = static_cast<int>(std::ceil(m_Zoom + m_PlayerPos.y + 1.0f));
+	auto top = static_cast<int>(std::ceil(m_Zoom + m_PlayerPos.y + 2.0f));
 
 	m_ViewportWidth = right - left;
 	m_ViewportHeight = top - bottom;
@@ -241,145 +254,200 @@ void MainLayer::InitCamera() {
 
 
 void MainLayer::InitMap() {
+	using namespace std::chrono_literals;
 	HZ_PROFILE_FUNCTION();
+
 	m_ChunkWidth = 2 * m_ViewportWidth;
 	m_ChunkHeight = 2 * m_ViewportHeight;
 
 	auto chunkX = static_cast<int>(std::round(m_PlayerPos.x / (m_ChunkWidth - m_ViewportWidth)));
 	auto chunkY = static_cast<int>(std::round(m_PlayerPos.y / (m_ChunkHeight - m_ViewportHeight)));
 
+	// submit 9 chunks for generation
 	for (auto j = chunkY - 1; j <= chunkY + 1; ++j) {
 		for (auto i = chunkX - 1; i <= chunkX + 1; ++i) {
 			GenerateMapChunk(i, j);
 		}
 	}
+
+	// wait until the chunks are generated
+	bool done = false;
+	while (!done) {
+		std::this_thread::sleep_for(25ms);
+		std::lock_guard lock(m_ChunkMutex);
+		HZ_PROFILE_LOCKMARKER(m_ChunkMutex);
+		done = m_ChunksToGenerate.empty();
+	}
 }
 
 
 void MainLayer::GenerateMapChunk(const int i, const int j) {
-	HZ_PROFILE_FUNCTION();
-
-	// TODO: what if overflow an int?  (unlikely, but still...)
-	int left = i * (m_ChunkWidth - m_ViewportWidth) - m_ViewportWidth;
-	int right = left + m_ChunkWidth;
-	int bottom = j * (m_ChunkHeight - m_ViewportHeight) - m_ViewportHeight;
-	int top = bottom + m_ChunkHeight;
-
-	std::vector<uint8_t> groundType;
-	std::vector<uint8_t> treeType;
-	std::vector<glm::vec3> treeCoords;
-	std::vector<glm::vec2> treeScale;
-	std::vector<glm::vec3> treeShadowCoords;
-	std::vector<glm::vec2> treeShadowSize;
-	groundType.reserve(m_ChunkWidth * m_ChunkHeight);
-	treeType.reserve(m_ChunkWidth * m_ChunkHeight);
-	treeCoords.reserve(m_ChunkWidth * m_ChunkHeight);
-	treeScale.reserve(m_ChunkWidth * m_ChunkHeight);
-	treeShadowCoords.reserve(m_ChunkWidth * m_ChunkHeight);
-	treeShadowSize.reserve(m_ChunkWidth * m_ChunkHeight);
-
-	// TODO: switch to "FasterNoise"  (aka. FastNoiseSIMD)
-
-	// Ground
-	for (int y = bottom; y < top; ++y) {
-		for (int x = left; x < right; ++x) {
-			float terrainValue = m_TerrainSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
-			if (terrainValue < -0.1f) {
-				groundType.emplace_back(0);          // water
-			} else if (terrainValue < 0.4f) {
-				groundType.emplace_back(1);          // grass
-			} else {
-				groundType.emplace_back(2);          // dirt
-			}
-		}
+	{
+		std::lock_guard lock(m_ChunkMutex);
+		HZ_PROFILE_LOCKMARKER(m_ChunkMutex);
+		m_ChunksToGenerate.emplace(i, j);
 	}
+	m_ChunkCV.notify_one();
+}
 
-	// Trees
-	// The result is underwhelming.  Some sort of poisson disk sampling, with noise-dependent radius might be better
-	// (with pre-generated level of fixed size)
-	for (int y = bottom + 1; y < top; ++y) {
-		for (int x = left + 1; x < right; ++x) {
-			uint32_t index = ((y - bottom) * m_ChunkWidth) + (x - left);
-			uint32_t groundTile = (27 * groundType[index - 1]) + (9 * groundType[index]) + (3 * groundType[index - m_ChunkWidth - 1]) + groundType[index - m_ChunkWidth];
 
-			// trees don't grow on water tiles (any tile <= 39)
-			if (groundTile == 40) {
-				float treeValue = m_TreeSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
-				Random treeRandomizer({x, y});
-				if (treeValue > 0.45f) {
-					// big tree
-					if (treeRandomizer.Uniform0_1() < 0.3f) {
-						float xOffset = treeRandomizer.Uniform(0.2f, 0.8f);
-						float yOffset = treeRandomizer.Uniform(0.2f, 0.8f);
-						float scale = treeRandomizer.Uniform(0.8f, 1.2f);
-						treeType.emplace_back(0);
-						treeCoords.emplace_back(x - xOffset, y - yOffset + scale, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.8f);
-						treeScale.emplace_back(scale, 2.0f * scale);
-						treeShadowCoords.emplace_back(x - xOffset, y - yOffset + 0.36 * scale, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.9f);
-						treeShadowSize.emplace_back(1.2f * scale, 1.2f * scale);
-					}
-				} else if (treeValue > 0.0f) {
-					// small tree
-					if (treeRandomizer.Uniform0_1() < 0.2f) {
-						float xOffset = treeRandomizer.Uniform(0.2f, 0.8f);
-						float yOffset = treeRandomizer.Uniform(0.2f, 0.8f);
-						float scale = treeRandomizer.Uniform(0.8f, 1.2f);
-						treeType.emplace_back(1);
-						treeCoords.emplace_back(x - xOffset, y - yOffset + scale, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.8f);
-						treeScale.emplace_back(scale, 2.0f * scale);
-						treeShadowCoords.emplace_back(x - xOffset, y - yOffset + 0.3f * scale, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.9f);
-						treeShadowSize.emplace_back(scale, scale);
+void MainLayer::ChunkGenerator() {
+	for (;;) {
+		bool isWorkToDo = false;
+		std::pair<int, int> chunk;
+		{
+			// suspend thread until we're told to stop, or there is a chunk to generate
+			std::unique_lock lock(m_ChunkMutex);
+			m_ChunkCV.wait(lock, [&] { return m_StopThreads || !m_ChunksToGenerate.empty(); });
+			HZ_PROFILE_LOCKMARKER(m_ChunkMutex);
+			//
+			// Here, we have lock on m_ChunkMutex. This blocks anyone from modifying thread shared data (such as m_StopThread, and the queue)
+			// until we've finished with it.
+			if (m_StopThreads) {
+				break;
+			}
+
+			isWorkToDo = !m_ChunksToGenerate.empty();
+			if (isWorkToDo) {
+				chunk = *m_ChunksToGenerate.begin();
+				m_ChunksToGenerate.erase(m_ChunksToGenerate.begin());
+			}
+		} // release lock
+
+		while (isWorkToDo) {
+			HZ_PROFILE_SCOPE("Generate Map Chunk");
+
+			int left = chunk.first * (m_ChunkWidth - m_ViewportWidth) - m_ViewportWidth;
+			int right = left + m_ChunkWidth;
+			int bottom = chunk.second * (m_ChunkHeight - m_ViewportHeight) - m_ViewportHeight;
+			int top = bottom + m_ChunkHeight;
+
+			std::vector<uint8_t> groundType;
+			std::vector<uint8_t> treeType;
+			std::vector<glm::vec3> treeCoords;
+			std::vector<glm::vec2> treeScale;
+			std::vector<glm::vec3> treeShadowCoords;
+			std::vector<glm::vec2> treeShadowSize;
+			groundType.reserve(m_ChunkWidth * m_ChunkHeight);
+			treeType.reserve(m_ChunkWidth * m_ChunkHeight);
+			treeCoords.reserve(m_ChunkWidth * m_ChunkHeight);
+			treeScale.reserve(m_ChunkWidth * m_ChunkHeight);
+			treeShadowCoords.reserve(m_ChunkWidth * m_ChunkHeight);
+			treeShadowSize.reserve(m_ChunkWidth * m_ChunkHeight);
+
+			// TODO: switch to "FasterNoise"  (aka. FastNoiseSIMD)
+
+			// Ground
+			for (int y = bottom; y < top; ++y) {
+				for (int x = left; x < right; ++x) {
+					float terrainValue = m_TerrainSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
+					if (terrainValue < -0.1f) {
+						groundType.emplace_back(0);          // water
+					} else if (terrainValue < 0.4f) {
+						groundType.emplace_back(1);          // grass
+					} else {
+						groundType.emplace_back(2);          // dirt
 					}
 				}
-			} else if (groundTile > 40) {
-				float treeValue = m_TreeSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
-				Random treeRandomizer({x, y});
-				if (treeValue > 0.7f) {
-					// small orange shrub
-					if (treeRandomizer.Uniform0_1() < 0.6f) {
-						float xOffset = treeRandomizer.Uniform0_1();
-						float yOffset = treeRandomizer.Uniform0_1();
-						float scale = 1.0f;
-						treeType.emplace_back(9);
-						treeCoords.emplace_back(x - xOffset, y - yOffset, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.8f);
-						treeScale.emplace_back(scale, scale);
-						treeShadowCoords.emplace_back(x - xOffset, y - yOffset, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.9f);
-						treeShadowSize.emplace_back(scale, scale);
-					}
-				} else if (treeValue > 0.0f) {
-					// orange shrubs
-					if (treeRandomizer.Uniform0_1() < 0.5f) {
-						float xOffset = treeRandomizer.Uniform0_1();
-						float yOffset = treeRandomizer.Uniform0_1();
-						float scale = treeRandomizer.Uniform(0.8f, 1.2f);
-						treeType.emplace_back(8);
-						treeCoords.emplace_back(x - xOffset, y - yOffset, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.8f);
-						treeScale.emplace_back(scale, scale);
-						treeShadowCoords.emplace_back(x - xOffset, y - yOffset - 0.1f * scale, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.9f);
-						treeShadowSize.emplace_back(scale, scale);
-						if (treeRandomizer.Uniform0_1() < 0.5f) {
-							float xOffset = treeRandomizer.Uniform0_1();
-							float yOffset = treeRandomizer.Uniform0_1();
-							float scale = treeRandomizer.Uniform(0.8f, 1.2f);
-							treeType.emplace_back(9);
-							treeCoords.emplace_back(x - xOffset, y - yOffset, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.8f);
-							treeScale.emplace_back(scale, scale);
-							treeShadowCoords.emplace_back(x - xOffset, y - yOffset - 0.21f * scale, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.9f);
-							treeShadowSize.emplace_back(0.7f * scale, 0.7f * scale);
+			}
+
+			// Trees
+			// The result is underwhelming.  Some sort of poisson disk sampling, with noise-dependent radius might be better
+			// (with pre-generated level of fixed size)
+			for (int y = bottom + 1; y < top; ++y) {
+				for (int x = left + 1; x < right; ++x) {
+					uint32_t index = ((y - bottom) * m_ChunkWidth) + (x - left);
+					uint32_t groundTile = (27 * groundType[index - 1]) + (9 * groundType[index]) + (3 * groundType[index - m_ChunkWidth - 1]) + groundType[index - m_ChunkWidth];
+
+					// trees don't grow on water tiles (any tile <= 39)
+					if (groundTile == 40) {
+						float treeValue = m_TreeSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
+						Random treeRandomizer({x, y});
+						if (treeValue > 0.45f) {
+							// big tree
+							if (treeRandomizer.Uniform0_1() < 0.3f) {
+								float xOffset = treeRandomizer.Uniform(0.2f, 0.8f);
+								float yOffset = treeRandomizer.Uniform(0.2f, 0.8f);
+								float scale = treeRandomizer.Uniform(0.8f, 1.2f);
+								treeType.emplace_back(0);
+								treeCoords.emplace_back(x - xOffset, y - yOffset + scale, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.8f);
+								treeScale.emplace_back(scale, 2.0f * scale);
+								treeShadowCoords.emplace_back(x - xOffset, y - yOffset + 0.36 * scale, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.9f);
+								treeShadowSize.emplace_back(1.2f * scale, 1.2f * scale);
+							}
+						} else if (treeValue > 0.0f) {
+							// small tree
+							if (treeRandomizer.Uniform0_1() < 0.2f) {
+								float xOffset = treeRandomizer.Uniform(0.2f, 0.8f);
+								float yOffset = treeRandomizer.Uniform(0.2f, 0.8f);
+								float scale = treeRandomizer.Uniform(0.8f, 1.2f);
+								treeType.emplace_back(1);
+								treeCoords.emplace_back(x - xOffset, y - yOffset + scale, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.8f);
+								treeScale.emplace_back(scale, 2.0f * scale);
+								treeShadowCoords.emplace_back(x - xOffset, y - yOffset + 0.3f * scale, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.9f);
+								treeShadowSize.emplace_back(scale, scale);
+							}
+						}
+					} else if (groundTile > 40) {
+						float treeValue = m_TreeSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
+						Random treeRandomizer({x, y});
+						if (treeValue > 0.7f) {
+							// small orange shrub
+							if (treeRandomizer.Uniform0_1() < 0.6f) {
+								float xOffset = treeRandomizer.Uniform0_1();
+								float yOffset = treeRandomizer.Uniform0_1();
+								float scale = 1.0f;
+								treeType.emplace_back(9);
+								treeCoords.emplace_back(x - xOffset, y - yOffset, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.8f);
+								treeScale.emplace_back(scale, scale);
+								treeShadowCoords.emplace_back(x - xOffset, y - yOffset, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.9f);
+								treeShadowSize.emplace_back(scale, scale);
+							}
+						} else if (treeValue > 0.0f) {
+							// orange shrubs
+							if (treeRandomizer.Uniform0_1() < 0.5f) {
+								float xOffset = treeRandomizer.Uniform0_1();
+								float yOffset = treeRandomizer.Uniform0_1();
+								float scale = treeRandomizer.Uniform(0.8f, 1.2f);
+								treeType.emplace_back(8);
+								treeCoords.emplace_back(x - xOffset, y - yOffset, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.8f);
+								treeScale.emplace_back(scale, scale);
+								treeShadowCoords.emplace_back(x - xOffset, y - yOffset - 0.1f * scale, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.9f);
+								treeShadowSize.emplace_back(scale, scale);
+								if (treeRandomizer.Uniform0_1() < 0.5f) {
+									float xOffset = treeRandomizer.Uniform0_1();
+									float yOffset = treeRandomizer.Uniform0_1();
+									float scale = treeRandomizer.Uniform(0.8f, 1.2f);
+									treeType.emplace_back(9);
+									treeCoords.emplace_back(x - xOffset, y - yOffset, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.8f);
+									treeScale.emplace_back(scale, scale);
+									treeShadowCoords.emplace_back(x - xOffset, y - yOffset - 0.21f * scale, ((top - (y - yOffset)) / m_ChunkHeight / 10.0f) - 0.9f);
+									treeShadowSize.emplace_back(0.7f * scale, 0.7f * scale);
+								}
+							}
 						}
 					}
 				}
 			}
+
+			{
+				std::lock_guard lock(m_ChunkMutex);
+				HZ_PROFILE_LOCKMARKER(m_ChunkMutex);
+				m_GroundType.insert(std::make_pair(chunk, std::move(groundType)));
+				m_TreeType.insert(std::make_pair(chunk, std::move(treeType)));
+				m_TreeCoords.insert(std::make_pair(chunk, std::move(treeCoords)));
+				m_TreeScale.insert(std::make_pair(chunk, std::move(treeScale)));
+				m_TreeShadowCoords.insert(std::make_pair(chunk, std::move(treeShadowCoords)));
+				m_TreeShadowSize.insert(std::make_pair(chunk, std::move(treeShadowSize)));
+				isWorkToDo = !m_ChunksToGenerate.empty();
+				if (isWorkToDo) {
+					chunk = *m_ChunksToGenerate.begin();
+					m_ChunksToGenerate.erase(m_ChunksToGenerate.begin());
+				}
+			}
+
 		}
 	}
-
-	std::pair<int, int> key = {i, j};
-	m_GroundType.insert(std::make_pair(key, std::move(groundType)));
-	m_TreeType.insert(std::make_pair(key, std::move(treeType)));
-	m_TreeCoords.insert(std::make_pair(key, std::move(treeCoords)));
-	m_TreeScale.insert(std::make_pair(key, std::move(treeScale)));
-	m_TreeShadowCoords.insert(std::make_pair(key, std::move(treeShadowCoords)));
-	m_TreeShadowSize.insert(std::make_pair(key, std::move(treeShadowSize)));
 }
 
 
