@@ -9,7 +9,8 @@ workspace "Nirnia"
 	configurations
 	{
 		"Debug",
-		"Release",
+		"Profile",
+		"Release"
 	}
 
 	workspace_files 

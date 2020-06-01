@@ -211,6 +211,7 @@ void GroundLayer::OnDetach() {
 
 
 void GroundLayer::OnUpdate(Hazel::Timestep ts) {
+	HZ_PROFILE_FRAMEMARKER();
 	HZ_PROFILE_FUNCTION();
 
 	UpdatePlayer(ts);
