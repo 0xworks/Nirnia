@@ -62,7 +62,7 @@ public:
 	void OnEvent(Hazel::Event& e) override;
 
 private:
-	void InitGroundTiles();
+	void InitGroundTextures();
 	void InitPlayer();
 	void InitCamera();
 	void InitMap();
@@ -72,6 +72,12 @@ private:
 
 	// Generates the map chunks (on a worker thread)
 	void ChunkGenerator();
+
+	// Submits work to the chunk eraser and returns immediately
+	void EraseMapChunk(const int i, const int j);
+
+	// Erases map chunks (on a worker thread)
+	void ChunkEraser();
 
 	bool OnWindowResize(Hazel::WindowResizeEvent& e);
 
@@ -89,18 +95,21 @@ private:
 
 	Hazel::Ref<Hazel::Texture2D> m_BackgroundSheet;
 	Hazel::Ref<Hazel::Texture2D> m_PlayerSheet;
-	std::vector<Hazel::Ref<Hazel::SubTexture2D>> m_GroundTiles;
-	std::vector<Hazel::Ref<Hazel::SubTexture2D>> m_TreeTiles;
-	Hazel::Ref<Hazel::SubTexture2D> m_TreeShadow;
+	std::vector<Hazel::Ref<Hazel::SubTexture2D>> m_GroundTextures;
+	std::vector<Hazel::Ref<Hazel::SubTexture2D>> m_TreeTextures;
+	Hazel::Ref<Hazel::SubTexture2D> m_TreeShadowTexture;
 
 	std::vector<Hazel::Ref<Hazel::SubTexture2D>> m_PlayerSprites;
 	std::vector<std::vector<uint8_t>> m_PlayerAnimations;
 
 	bool m_StopThreads;                                           // Setting this to true will terminate helper threads (e.g. the Chunk Generator thread)
 	std::thread m_ChunkGenerator;                                 // Thread is started in OnAttach(), and runs until m_StopThreads is true.  Need to store this thread handle so that OnDetach() can wait for exit.
+	std::thread m_ChunkEraser;                                    // Thread is started in OnAttach(), and runs until m_StopThreads is true.  Need to store this thread handle so that OnDetach() can wait for exit.
 	HZ_PROFILE_LOCK(std::mutex, m_ChunkMutex, "Chunk Mutex");     // Synch access to chunk data
-	std::condition_variable_any m_ChunkCV;                        // Notified when there are some chunks that require generation
+	std::condition_variable_any m_ChunkGeneratorCV;               // Notified when there are some chunks that require generation
+	std::condition_variable_any m_ChunkEraserCV;                  // Notified when there are some chunks that require erasure
 	std::unordered_set<std::pair<int, int>> m_ChunksToGenerate;   // "queue" of chunks to generate. (implemented as a set.  It doesn't matter what order we do them in, and unordered_set makes it easy and efficient to prevent adding same chunk more than once)
+	std::unordered_set<std::pair<int, int>> m_ChunksToErase;      // "queue" of chunks to erase. (implemented as a set.  It doesn't matter what order we do them in, and unordered_set makes it easy and efficient to prevent adding same chunk more than once)
 
 	uint32_t m_ChunkWidth;
 	uint32_t m_ChunkHeight;
@@ -115,6 +124,8 @@ private:
 	glm::vec2 m_PlayerSize;
 	PlayerState m_PlayerState;
 	uint32_t m_PlayerFrame;
+
+	std::pair<int, int> m_PrevChunk;
 
 	float m_AspectRatio = 1.0f;
 	float m_Zoom = 4.0f;
