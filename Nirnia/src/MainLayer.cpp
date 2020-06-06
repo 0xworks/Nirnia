@@ -80,7 +80,7 @@ void MainLayer::OnDetach() {
 void MainLayer::InitGroundTextures() {
 	HZ_PROFILE_FUNCTION();
 
-	m_BackgroundSheet = Hazel::Texture2D::Create("assets/textures/RPGpack_sheet_2X_altered.png");
+	m_BackgroundSheet = Hazel::Texture2D::Create("assets/textures/RPGpack_sheet_2X.png");
 
 	m_GroundTextures.resize(83);                                                                        //  TL    TR    BL    BR
 	m_GroundTextures[0] = Hazel::SubTexture2D::CreateFromCoords(m_BackgroundSheet, {11, 11}, {128, 128});  // water water water water
