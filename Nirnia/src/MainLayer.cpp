@@ -15,6 +15,7 @@ MainLayer::MainLayer()
 {
 	//
 	// loads of options here
+	m_TerrainSampler.SetSeed(1337);
 	m_TerrainSampler.SetFrequency(0.02f);                      // Default 0.1
 	m_TerrainSampler.SetInterp(FastNoise::Quintic);            // Default: Quintic
 	m_TerrainSampler.SetNoiseType(FastNoise::SimplexFractal);  // Default: Simplex
@@ -388,9 +389,7 @@ void MainLayer::ChunkGenerator() {
 				for (int x = left + 1; x < right; ++x) {
 					uint32_t index = ((y - bottom) * m_ChunkWidth) + (x - left);
 					uint8_t groundTile = groundType[index];
-
-					// trees don't grow on water tiles (any tile <= 39)
-					if ((groundTile == 40) || (groundTile == 81) || (groundTile == 82))  {
+					if (IsGrass(groundTile)) {
 						float treeValue = m_TreeSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
 						Random treeRandomizer({x, y});
 						if (treeValue > 0.45f) {
@@ -418,7 +417,7 @@ void MainLayer::ChunkGenerator() {
 								treeShadowSize.emplace_back(scale, scale);
 							}
 						}
-					} else if (groundTile > 40) {
+					} else if (IsDirt(groundTile)) {
 						float treeValue = m_TreeSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
 						Random treeRandomizer({x, y});
 						if (treeValue > 0.7f) {
@@ -496,7 +495,7 @@ void MainLayer::ChunkEraser() {
 		bool isWorkToDo = false;
 		std::pair<int, int> chunk;
 		{
-			// suspend thread until we're told to stop, or there is a chunk to generate
+			// suspend thread until we're told to stop, or there is a chunk to erase
 			std::unique_lock lock(m_ChunkMutex);
 			m_ChunkEraserCV.wait(lock, [&] { return m_StopThreads || !m_ChunksToErase.empty(); });
 			HZ_PROFILE_LOCKMARKER(m_ChunkMutex);

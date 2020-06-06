@@ -83,6 +83,10 @@ private:
 
 	void UpdatePlayer(Hazel::Timestep ts);
 
+	bool IsGrass(uint8_t groundTile) { return (groundTile == 40) || (groundTile == 81) || (groundTile == 82); }
+	bool IsDirt(uint8_t groundTile) { return (groundTile >= 41) && (groundTile < 81); }
+	bool IsWater(uint8_t groundTile) { return groundTile < 40; }
+
 private:
 	Random m_Random;
 	FastNoise m_TerrainSampler;
