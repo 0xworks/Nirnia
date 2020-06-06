@@ -255,7 +255,7 @@ void MainLayer::InitCamera() {
 	m_Camera = Hazel::CreateScope<Hazel::OrthographicCamera>(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
 
 	auto left = static_cast<int>(std::floor((-m_AspectRatio * m_Zoom) + m_PlayerPos.x - 1.0f));
-	auto right = static_cast<int>(std::ceil(m_AspectRatio * m_Zoom + m_PlayerPos.x + 1.0f));
+	auto right = static_cast<int>(std::ceil(m_AspectRatio * m_Zoom + m_PlayerPos.x + 2.0f));
 	auto bottom = static_cast<int>(std::floor(-m_Zoom + m_PlayerPos.y - 2.0f));
 	auto top = static_cast<int>(std::ceil(m_Zoom + m_PlayerPos.y + 2.0f));
 
@@ -268,26 +268,49 @@ void MainLayer::InitMap() {
 	using namespace std::chrono_literals;
 	HZ_PROFILE_FUNCTION();
 
+	// Erase existing map chunks (if any)
+	std::unordered_set<std::pair<int, int>> chunksToErase;
+	for (const auto& [chunk, groundType] : m_GroundType) {
+		chunksToErase.emplace(chunk);
+	}
+	for (const auto [i, j] : chunksToErase) {
+		EraseMapChunk(i, j);
+	}
+
+	// Wait until the chunks are erased before starting to generate new ones
+	// Because we are going to change chunk size, which means that the chunk key values
+	// now have different meanings.
+	// (e.g. chunk(0,0) after resize is a different chunk to chunk (0,0) before resize)
+	bool doneErasing = false;
+	while (!doneErasing) {
+		std::this_thread::sleep_for(25ms);
+		std::lock_guard lock(m_ChunkMutex);
+		HZ_PROFILE_LOCKMARKER(m_ChunkMutex);
+		doneErasing = m_ChunksToErase.empty();
+	}
+
+
 	m_ChunkWidth = 2 * m_ViewportWidth;
 	m_ChunkHeight = 2 * m_ViewportHeight;
 
 	auto chunkX = static_cast<int>(std::round(m_PlayerPos.x / (m_ChunkWidth - m_ViewportWidth)));
 	auto chunkY = static_cast<int>(std::round(m_PlayerPos.y / (m_ChunkHeight - m_ViewportHeight)));
 
-	// submit 9 chunks for generation
+	// Submit 9 chunks for generation
 	for (auto j = chunkY - 1; j <= chunkY + 1; ++j) {
 		for (auto i = chunkX - 1; i <= chunkX + 1; ++i) {
 			GenerateMapChunk(i, j);
 		}
 	}
 
-	// wait until the chunks are generated
-	bool done = false;
-	while (!done) {
+	// Wait until the chunks are generated
+	// Because we don't want to start drawing the world until we know it's been generated
+	bool doneGenerating = false;
+	while (!doneGenerating) {
 		std::this_thread::sleep_for(25ms);
 		std::lock_guard lock(m_ChunkMutex);
 		HZ_PROFILE_LOCKMARKER(m_ChunkMutex);
-		done = m_ChunksToGenerate.empty();
+		doneGenerating = m_ChunksToGenerate.empty();
 	}
 }
 
@@ -701,7 +724,7 @@ void MainLayer::OnEvent(Hazel::Event& e) {
 
 
 bool MainLayer::OnWindowResize(Hazel::WindowResizeEvent& e) {
-	m_AspectRatio = static_cast<float>(e.GetWidth()) / static_cast<float>(e.GetHeight());
-	m_Camera->SetProjection(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
+	InitCamera();
+	InitMap();
 	return false;
 }
