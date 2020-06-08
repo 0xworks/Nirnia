@@ -94,8 +94,8 @@ private:
 	FastNoise m_TreeSampler;
 
 	Hazel::Scope<Hazel::OrthographicCamera> m_Camera;
-	uint32_t m_ViewportWidth;
-	uint32_t m_ViewportHeight;
+	int m_ViewportWidth;
+	int m_ViewportHeight;
 
 	Hazel::Ref<Hazel::Texture2D> m_BackgroundSheet;
 	Hazel::Ref<Hazel::Texture2D> m_PlayerSheet;
@@ -115,8 +115,8 @@ private:
 	std::unordered_set<std::pair<int, int>> m_ChunksToGenerate;   // "queue" of chunks to generate. (implemented as a set.  It doesn't matter what order we do them in, and unordered_set makes it easy and efficient to prevent adding same chunk more than once)
 	std::unordered_set<std::pair<int, int>> m_ChunksToErase;      // "queue" of chunks to erase. (implemented as a set.  It doesn't matter what order we do them in, and unordered_set makes it easy and efficient to prevent adding same chunk more than once)
 
-	uint32_t m_ChunkWidth;
-	uint32_t m_ChunkHeight;
+	int m_ChunkWidth;
+	int m_ChunkHeight;
 	std::unordered_map<std::pair<int, int>, std::vector<uint8_t>> m_GroundType;
 	std::unordered_map<std::pair<int, int>, std::vector<uint8_t>> m_TreeType;
 	std::unordered_map<std::pair<int, int>, std::vector<glm::vec3>> m_TreeCoords;
