@@ -62,6 +62,15 @@ public:
 	void OnEvent(Hazel::Event& e) override;
 
 private:
+	struct TreeProperties {
+		glm::vec3 Position;
+		glm::vec3 ShadowPosition;
+		glm::vec2 Size;
+		glm::vec2 ShadowSize;
+		uint8_t Type;
+	};
+
+private:
 	void InitGroundTextures();
 	void InitPlayer();
 	void InitCamera();
@@ -69,6 +78,8 @@ private:
 	
 	// Submits work to the chunk generator and returns immediately
 	void GenerateMapChunk(const int i, const int j);
+
+	TreeProperties GenerateTree(uint8_t tree, const int x, const int y, const int chunkTop, Random& treeRandomizer);
 
 	// Generates the map chunks (on a worker thread)
 	void ChunkGenerator();
@@ -102,6 +113,11 @@ private:
 	std::vector<Hazel::Ref<Hazel::SubTexture2D>> m_GroundTextures;
 	std::vector<Hazel::Ref<Hazel::SubTexture2D>> m_TreeTextures;
 	Hazel::Ref<Hazel::SubTexture2D> m_TreeShadowTexture;
+	std::vector<float> m_TreeBottomYOffsets; // distance from bottom of tree to centre of tile.  Used for positioning tree within ground tiles, and for computing tree "z"
+	std::vector<float> m_TreeYScale;         // scale tree depending on tree type
+	std::vector<float> m_TreeShadowScale;    // scale shadow depending on tree type
+	constexpr static float m_TreeShadowYOffset = 39.0f / 128.0f;  // distance from centre of shadow in asset to centre of tile.  Used to correctly position the shadow texture within the ground tiles
+	constexpr static float m_PlayerYOffset = 44.0f / 128.0f;      // distance from centre of player sprite to players feet.  Player position is the position of the feet.
 
 	std::vector<Hazel::Ref<Hazel::SubTexture2D>> m_PlayerSprites;
 	std::vector<std::vector<uint8_t>> m_PlayerAnimations;
@@ -119,15 +135,16 @@ private:
 	int m_ChunkHeight;
 	std::unordered_map<std::pair<int, int>, std::vector<uint8_t>> m_GroundType;
 	std::unordered_map<std::pair<int, int>, std::vector<uint8_t>> m_TreeType;
-	std::unordered_map<std::pair<int, int>, std::vector<glm::vec3>> m_TreeCoords;
-	std::unordered_map<std::pair<int, int>, std::vector<glm::vec2>> m_TreeScale;
-	std::unordered_map<std::pair<int, int>, std::vector<glm::vec3>> m_TreeShadowCoords;
+	std::unordered_map<std::pair<int, int>, std::vector<glm::vec3>> m_TreePositions;
+	std::unordered_map<std::pair<int, int>, std::vector<glm::vec2>> m_TreeSize;
+	std::unordered_map<std::pair<int, int>, std::vector<glm::vec3>> m_TreeShadowPositions;
 	std::unordered_map<std::pair<int, int>, std::vector<glm::vec2>> m_TreeShadowSize;
 
 	glm::vec2 m_PlayerPos;
-	glm::vec2 m_PlayerSize;
 	PlayerState m_PlayerState;
 	uint32_t m_PlayerFrame;
+	glm::vec2 m_PlayerSize;
+	constexpr static float m_PlayerMovementSpeed = 1.5f;
 
 	std::pair<int, int> m_PrevChunk;
 

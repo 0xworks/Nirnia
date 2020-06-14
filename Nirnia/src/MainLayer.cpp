@@ -10,6 +10,8 @@
 
 #include <random>
 
+#define TEST_MODE 0
+
 MainLayer::MainLayer()
 : Layer("Map")
 {
@@ -37,7 +39,6 @@ MainLayer::MainLayer()
 	m_TreeSampler.SetFrequency(0.02f);
 
 	// note: defer creation of camera until OnAttach(), so we know the correct window size.
-
 }
 
 
@@ -186,6 +187,49 @@ void MainLayer::InitGroundTextures() {
 	m_TreeTextures[11] = Hazel::SubTexture2D::CreateFromCoords(m_BackgroundSheet, {5, 3}, {128, 128}, {1, 1}); // small dark green shrub
 
 	m_TreeShadowTexture = Hazel::SubTexture2D::CreateFromCoords(m_BackgroundSheet, {15, 11}, {128, 128}, {1, 1});
+
+	m_TreeBottomYOffsets.resize(12);
+	m_TreeBottomYOffsets[0] = 62 / 128.0f;
+	m_TreeBottomYOffsets[1] = 62 / 128.0f;
+	m_TreeBottomYOffsets[2] = 62 / 128.0f;
+	m_TreeBottomYOffsets[3] = 62 / 128.0f;
+	m_TreeBottomYOffsets[4] = 62 / 128.0f;
+	m_TreeBottomYOffsets[5] = 62 / 128.0f;
+	m_TreeBottomYOffsets[6] = 58.0f / 128.0f;//
+	m_TreeBottomYOffsets[7] = 60.0f / 128.0f;
+	m_TreeBottomYOffsets[8] = 58.0f / 128.0f;//
+	m_TreeBottomYOffsets[9] = 60.0f / 128.0f;
+	m_TreeBottomYOffsets[10] = 58.0f / 128.0f;//
+	m_TreeBottomYOffsets[11] = 60.0f / 128.0f;
+
+	m_TreeYScale.resize(12);
+	m_TreeYScale[0] = 2.0f;
+	m_TreeYScale[1] = 2.0f;
+	m_TreeYScale[2] = 2.0f;
+	m_TreeYScale[3] = 2.0f;
+	m_TreeYScale[4] = 2.0f;
+	m_TreeYScale[5] = 2.0f;
+	m_TreeYScale[6] = 1.0f;
+	m_TreeYScale[7] = 1.0f;
+	m_TreeYScale[8] = 1.0f;
+	m_TreeYScale[9] = 1.0f;
+	m_TreeYScale[10] = 1.0f;
+	m_TreeYScale[11] = 1.0f;
+
+	m_TreeShadowScale.resize(12);
+	m_TreeShadowScale[0] = 1.0f;
+	m_TreeShadowScale[1] = 1.0f;
+	m_TreeShadowScale[2] = 1.0f;
+	m_TreeShadowScale[3] = 1.0f;
+	m_TreeShadowScale[4] = 1.0f;
+	m_TreeShadowScale[5] = 1.0f;
+	m_TreeShadowScale[6] = 1.0f;
+	m_TreeShadowScale[7] = 0.6f;
+	m_TreeShadowScale[8] = 1.0f;
+	m_TreeShadowScale[9] = 0.6f;
+	m_TreeShadowScale[10] = 1.0f;
+	m_TreeShadowScale[11] = 0.6f;
+
 }
 
 
@@ -253,7 +297,6 @@ void MainLayer::InitCamera() {
 	HZ_PROFILE_FUNCTION();
 	m_AspectRatio = static_cast<float>(Hazel::Application::Get().GetWindow().GetWidth()) / static_cast<float>(Hazel::Application::Get().GetWindow().GetHeight());
 	m_Camera = Hazel::CreateScope<Hazel::OrthographicCamera>(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
-
 	m_ViewportWidth = (2 * static_cast<int>(std::ceil(m_AspectRatio * m_Zoom))) + 1;
 	m_ViewportHeight = (2 * static_cast<int>(m_Zoom)) + 2;  // + 2 to avoid tree pop
 }
@@ -284,12 +327,13 @@ void MainLayer::InitMap() {
 		doneErasing = m_ChunksToErase.empty();
 	}
 
-
 	m_ChunkWidth = 2 * m_ViewportWidth;
 	m_ChunkHeight = 2 * m_ViewportHeight;
 
-	auto left = static_cast<int>(std::floor((-m_AspectRatio * m_Zoom) + m_PlayerPos.x));
-	auto bottom = static_cast<int>(std::floor(-m_Zoom + m_PlayerPos.y));
+	glm::vec2 position = {m_PlayerPos.x, m_PlayerPos.y + m_PlayerYOffset};
+
+	auto left = static_cast<int>(std::floor((-m_AspectRatio * m_Zoom) + position.x));
+	auto bottom = static_cast<int>(std::floor(-m_Zoom + position.y));
 	auto chunkX = static_cast<int>(std::floor((left - 1.0f) / (m_ChunkWidth - m_ViewportWidth))) + 1;
 	auto chunkY = static_cast<int>(std::floor((bottom - 1.0f) / (m_ChunkHeight - m_ViewportHeight))) + 1;
 
@@ -322,6 +366,26 @@ void MainLayer::GenerateMapChunk(const int i, const int j) {
 }
 
 
+MainLayer::TreeProperties MainLayer::GenerateTree(uint8_t tree, const int x, const int y, const int chunkTop, Random& treeRandomizer) {
+	TreeProperties props;
+#if TEST_MODE
+	float xOffset = 0.5f;
+	float yOffset = 0.5f;
+	float scale = 1.0f;
+#else
+	float xOffset = treeRandomizer.Uniform(0.2f, 0.8f);
+	float yOffset = treeRandomizer.Uniform(0.2f, 0.8f);
+	float scale = treeRandomizer.Uniform(0.8f, 1.2f);
+#endif
+	props.Type = tree;
+	props.Position = {x + xOffset, y + yOffset + ((((m_TreeYScale[tree] - 1.0f) / 2.0f) + m_TreeBottomYOffsets[tree]) * scale), ((chunkTop - (y + yOffset)) / m_ChunkHeight / 10.0f) - 0.8f};
+	props.Size = {scale, m_TreeYScale[tree] * scale};
+	props.ShadowPosition = {x + xOffset, y + yOffset + (m_TreeShadowYOffset * m_TreeShadowScale[tree] * scale), ((chunkTop - (y + yOffset)) / m_ChunkHeight / 10.0f) - 0.9f};
+	props.ShadowSize = {m_TreeShadowScale[tree] * scale, m_TreeShadowScale[tree] * scale};
+	return props;
+}
+
+
 void MainLayer::ChunkGenerator() {
 	for (;;) {
 		bool isWorkToDo = false;
@@ -348,10 +412,10 @@ void MainLayer::ChunkGenerator() {
 			HZ_PROFILE_SCOPE("Generate Map Chunk");
 			HZ_INFO("Generating chunk ({0}, {1})", chunk.first, chunk.second);
 
-			int left = chunk.first * (m_ChunkWidth - m_ViewportWidth) - (m_ChunkWidth / 2);
-			int right = left + m_ChunkWidth;
-			int bottom = chunk.second * (m_ChunkHeight - m_ViewportHeight) - (m_ChunkHeight / 2);
-			int top = bottom + m_ChunkHeight;
+			int chunkLeft = chunk.first * (m_ChunkWidth - m_ViewportWidth) - (m_ChunkWidth / 2);
+			int chunkRight = chunkLeft + m_ChunkWidth;
+			int chunkBottom = chunk.second * (m_ChunkHeight - m_ViewportHeight) - (m_ChunkHeight / 2);
+			int chunkTop = chunkBottom + m_ChunkHeight;
 
 			std::vector<uint8_t> groundCorners;
 			std::vector<uint8_t> groundType;
@@ -373,9 +437,16 @@ void MainLayer::ChunkGenerator() {
 			// TODO: switch to "FasterNoise"  (aka. FastNoiseSIMD)
 
 			// Ground corners
-			for (int y = bottom; y <= top; ++y) {
-				for (int x = left; x <= right; ++x) {
+			for (int y = chunkBottom; y <= chunkTop; ++y) {
+				for (int x = chunkLeft; x <= chunkRight; ++x) {
+#if TEST_MODE
+					float terrainValue = 0.0f;
+					if (x == 0 && y == 0) {
+						terrainValue = 1.0;
+					}
+#else
 					float terrainValue = m_TerrainSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
+#endif
 					if (terrainValue < -0.1f) {
 						groundCorners.emplace_back(0);          // water
 					} else if (terrainValue < 0.4f) {
@@ -387,10 +458,10 @@ void MainLayer::ChunkGenerator() {
 			}
 
 			// Ground tiles
-			for (int y = bottom; y < top; ++y) {
-				for (int x = left; x < right; ++x) {
-					int index = ((y - bottom) * m_ChunkWidth) + (x - left);
-					int cornerBL = ((y - bottom) * (m_ChunkWidth + 1)) + (x - left);
+			for (int y = chunkBottom; y < chunkTop; ++y) {
+				for (int x = chunkLeft; x < chunkRight; ++x) {
+					int index = ((y - chunkBottom) * m_ChunkWidth) + (x - chunkLeft);
+					int cornerBL = ((y - chunkBottom) * (m_ChunkWidth + 1)) + (x - chunkLeft);
 					int cornerBR = cornerBL + 1;
 					int cornerTL = cornerBL + (m_ChunkWidth + 1);
 					int cornerTR = cornerBL + (m_ChunkWidth + 1) + 1;
@@ -412,9 +483,30 @@ void MainLayer::ChunkGenerator() {
 			// Trees
 			// The result is underwhelming.  Some sort of poisson disk sampling, with noise-dependent radius might be better
 			// (with pre-generated level of fixed size)
-			for (int y = bottom; y < top; ++y) {
-				for (int x = left; x < right; ++x) {
-					uint32_t index = ((y - bottom) * m_ChunkWidth) + (x - left);
+#if TEST_MODE
+			for (int y = chunkBottom; y < chunkTop; ++y) {
+				for (int x = chunkLeft; x < chunkRight; ++x) {
+					if (y == 0 && x == 0) {
+						TreeProperties props = GenerateTree(8, x, y, chunkTop, Random({x, y}));
+						treeType.emplace_back(props.Type);
+						treeCoords.emplace_back(props.Position);
+						treeScale.emplace_back(props.Size);
+						treeShadowCoords.emplace_back(props.ShadowPosition);
+						treeShadowSize.emplace_back(props.ShadowSize);
+					} else if (y == 1 && x == 1) {
+						TreeProperties props = GenerateTree(0, x, y, chunkTop, Random({x, y}));
+						treeType.emplace_back(props.Type);
+						treeCoords.emplace_back(props.Position);
+						treeScale.emplace_back(props.Size);
+						treeShadowCoords.emplace_back(props.ShadowPosition);
+						treeShadowSize.emplace_back(props.ShadowSize);
+					}
+				}
+			}
+#else
+			for (int y = chunkBottom; y < chunkTop; ++y) {
+				for (int x = chunkLeft; x < chunkRight; ++x) {
+					uint32_t index = ((y - chunkBottom) * m_ChunkWidth) + (x - chunkLeft);
 					uint8_t groundTile = groundType[index];
 					if (IsGrass(groundTile)) {
 						float treeValue = m_TreeSampler.GetNoise(static_cast<float>(x), static_cast<float>(y));
@@ -422,26 +514,22 @@ void MainLayer::ChunkGenerator() {
 						if (treeValue > 0.45f) {
 							// big tree
 							if (treeRandomizer.Uniform0_1() < 0.3f) {
-								float xOffset = treeRandomizer.Uniform(0.2f, 0.8f);
-								float yOffset = treeRandomizer.Uniform(0.2f, 0.8f);
-								float scale = treeRandomizer.Uniform(0.8f, 1.2f);
-								treeType.emplace_back(0);
-								treeCoords.emplace_back(x + xOffset, y + yOffset + scale, ((top - (y + yOffset)) / m_ChunkHeight / 10.0f) - 0.8f);
-								treeScale.emplace_back(scale, 2.0f * scale);
-								treeShadowCoords.emplace_back(x + xOffset, y + yOffset + 0.36f * scale, ((top - (y + yOffset)) / m_ChunkHeight / 10.0f) - 0.9f);
-								treeShadowSize.emplace_back(1.2f * scale, 1.2f * scale);
+								TreeProperties props = GenerateTree(0, x, y, chunkTop, treeRandomizer);
+								treeType.emplace_back(props.Type);
+								treeCoords.emplace_back(props.Position);
+								treeScale.emplace_back(props.Size);
+								treeShadowCoords.emplace_back(props.ShadowPosition);
+								treeShadowSize.emplace_back(props.ShadowSize);
 							}
 						} else if (treeValue > 0.0f) {
 							// small tree
 							if (treeRandomizer.Uniform0_1() < 0.2f) {
-								float xOffset = treeRandomizer.Uniform(0.2f, 0.8f);
-								float yOffset = treeRandomizer.Uniform(0.2f, 0.8f);
-								float scale = treeRandomizer.Uniform(0.8f, 1.2f);
-								treeType.emplace_back(1);
-								treeCoords.emplace_back(x + xOffset, y + yOffset + scale, ((top - (y + yOffset)) / m_ChunkHeight / 10.0f) - 0.8f);
-								treeScale.emplace_back(scale, 2.0f * scale);
-								treeShadowCoords.emplace_back(x + xOffset, y + yOffset + 0.3f * scale, ((top - (y + yOffset)) / m_ChunkHeight / 10.0f) - 0.9f);
-								treeShadowSize.emplace_back(scale, scale);
+								TreeProperties props = GenerateTree(1, x, y, chunkTop, treeRandomizer);
+								treeType.emplace_back(props.Type);
+								treeCoords.emplace_back(props.Position);
+								treeScale.emplace_back(props.Size);
+								treeShadowCoords.emplace_back(props.ShadowPosition);
+								treeShadowSize.emplace_back(props.ShadowSize);
 							}
 						}
 					} else if (IsDirt(groundTile)) {
@@ -450,50 +538,44 @@ void MainLayer::ChunkGenerator() {
 						if (treeValue > 0.7f) {
 							// small orange shrub
 							if (treeRandomizer.Uniform0_1() < 0.6f) {
-								float xOffset = treeRandomizer.Uniform(0.1f, 0.9f);
-								float yOffset = treeRandomizer.Uniform(0.1f, 0.9f);
-								float scale = 1.0f;
-								treeType.emplace_back(11);
-								treeCoords.emplace_back(x + xOffset, y + yOffset + 0.5f, ((top - (y + yOffset)) / m_ChunkHeight / 10.0f) - 0.8f);
-								treeScale.emplace_back(scale, scale);
-								treeShadowCoords.emplace_back(x + xOffset, y + yOffset + 0.5f, ((top - (y + yOffset)) / m_ChunkHeight / 10.0f) - 0.9f);
-								treeShadowSize.emplace_back(scale, scale);
+								TreeProperties props = GenerateTree(9, x, y, chunkTop, treeRandomizer);
+								treeType.emplace_back(props.Type);
+								treeCoords.emplace_back(props.Position);
+								treeScale.emplace_back(props.Size);
+								treeShadowCoords.emplace_back(props.ShadowPosition);
+								treeShadowSize.emplace_back(props.ShadowSize);
 							}
 						} else if (treeValue > 0.0f) {
 							// orange shrubs
 							if (treeRandomizer.Uniform0_1() < 0.5f) {
-								float xOffset = treeRandomizer.Uniform(0.1f, 0.9f);
-								float yOffset = treeRandomizer.Uniform(0.1f, 0.9f);
-								float scale = treeRandomizer.Uniform(0.8f, 1.2f);
-								treeType.emplace_back(8);
-								treeCoords.emplace_back(x + xOffset, y + yOffset + 0.5f, ((top - (y + yOffset)) / m_ChunkHeight / 10.0f) - 0.8f);
-								treeScale.emplace_back(scale, scale);
-								treeShadowCoords.emplace_back(x + xOffset, y + yOffset + 0.5f - 0.1f * scale, ((top - (y + yOffset)) / m_ChunkHeight / 10.0f) - 0.9f);
-								treeShadowSize.emplace_back(scale, scale);
+								TreeProperties props = GenerateTree(8, x, y, chunkTop, treeRandomizer);
+								treeType.emplace_back(props.Type);
+								treeCoords.emplace_back(props.Position);
+								treeScale.emplace_back(props.Size);
+								treeShadowCoords.emplace_back(props.ShadowPosition);
+								treeShadowSize.emplace_back(props.ShadowSize);
 								if (treeRandomizer.Uniform0_1() < 0.5f) {
-									float xOffset = treeRandomizer.Uniform(0.1f, 0.9f);
-									float yOffset = treeRandomizer.Uniform(0.1f, 0.9f);
-									float scale = treeRandomizer.Uniform(0.8f, 1.2f);
-									treeType.emplace_back(7);
-									treeCoords.emplace_back(x + xOffset, y + yOffset + 0.5f, ((top - (y + yOffset)) / m_ChunkHeight / 10.0f) - 0.8f);
-									treeScale.emplace_back(scale, scale);
-									treeShadowCoords.emplace_back(x + xOffset, y + yOffset + 0.5f - 0.21f * scale, ((top - (y + yOffset)) / m_ChunkHeight / 10.0f) - 0.9f);
-									treeShadowSize.emplace_back(0.7f * scale, 0.7f * scale);
+									TreeProperties props = GenerateTree(9, x, y, chunkTop, treeRandomizer);
+									treeType.emplace_back(props.Type);
+									treeCoords.emplace_back(props.Position);
+									treeScale.emplace_back(props.Size);
+									treeShadowCoords.emplace_back(props.ShadowPosition);
+									treeShadowSize.emplace_back(props.ShadowSize);
 								}
 							}
 						}
 					}
 				}
 			}
-
+#endif
 			{
 				std::lock_guard lock(m_ChunkMutex);
 				HZ_PROFILE_LOCKMARKER(m_ChunkMutex);
 				m_GroundType.insert(std::make_pair(chunk, std::move(groundType)));
 				m_TreeType.insert(std::make_pair(chunk, std::move(treeType)));
-				m_TreeCoords.insert(std::make_pair(chunk, std::move(treeCoords)));
-				m_TreeScale.insert(std::make_pair(chunk, std::move(treeScale)));
-				m_TreeShadowCoords.insert(std::make_pair(chunk, std::move(treeShadowCoords)));
+				m_TreePositions.insert(std::make_pair(chunk, std::move(treeCoords)));
+				m_TreeSize.insert(std::make_pair(chunk, std::move(treeScale)));
+				m_TreeShadowPositions.insert(std::make_pair(chunk, std::move(treeShadowCoords)));
 				m_TreeShadowSize.insert(std::make_pair(chunk, std::move(treeShadowSize)));
 				m_ChunksToGenerate.erase(chunk);
 				isWorkToDo = !m_ChunksToGenerate.empty();
@@ -547,9 +629,9 @@ void MainLayer::ChunkEraser() {
 				HZ_PROFILE_LOCKMARKER(m_ChunkMutex);
 				m_GroundType.erase(chunk);
 				m_TreeType.erase(chunk);
-				m_TreeCoords.erase(chunk);
-				m_TreeScale.erase(chunk);
-				m_TreeShadowCoords.erase(chunk);
+				m_TreePositions.erase(chunk);
+				m_TreeSize.erase(chunk);
+				m_TreeShadowPositions.erase(chunk);
 				m_TreeShadowSize.erase(chunk);
 				m_ChunksToErase.erase(chunk);
 				isWorkToDo = !m_ChunksToErase.empty();
@@ -571,31 +653,10 @@ void MainLayer::OnUpdate(Hazel::Timestep ts) {
 
 	UpdatePlayer(ts);
 
-	glm::vec3 position = {m_PlayerPos, 0.0f};
-	m_Camera->SetPosition(position);
+	glm::vec3 position = {m_PlayerPos.x, m_PlayerPos.y + m_PlayerYOffset, 0.0f};
 
-	// Animate
-	{
-		//HZ_PROFILE_SCOPE("Animate");
-		m_AnimationAccumulator += ts;
-		if (m_AnimationAccumulator > 0.1f) {
-			m_AnimationAccumulator = 0.0f;
-			m_PlayerFrame = ++m_PlayerFrame % m_PlayerAnimations[static_cast<int>(m_PlayerState)].size();
-			if (IsIdle(m_PlayerState) && (m_PlayerFrame == 0)) {
-				if (m_Random.Uniform0_1() < 0.25f) {
-					m_PlayerState = SetBlinkState(m_PlayerState);
-				} else {
-					m_PlayerState = ClearBlinkState(m_PlayerState);
-				}
-				if (m_Random.Uniform0_1() < 1.0f / 8.0f) {
-					m_PlayerState = SwapFootTapState(m_PlayerState);
-				}
-			} 
-		}
-	}
-
-	auto left = static_cast<int>(std::floor((-m_AspectRatio * m_Zoom) + m_PlayerPos.x));
-	auto bottom = static_cast<int>(std::floor(-m_Zoom + m_PlayerPos.y)) - 1; // -1 to avoid tree pop
+	auto left = static_cast<int>(std::floor((-m_AspectRatio * m_Zoom) + position.x));
+	auto bottom = static_cast<int>(std::floor(-m_Zoom + position.y)) - 1; // -1 to avoid tree pop
 	auto i = static_cast<int>(std::floor((left - 1.0f) / (m_ChunkWidth - m_ViewportWidth))) + 1;
 	auto j = static_cast<int>(std::floor((bottom - 1.0f) / (m_ChunkHeight - m_ViewportHeight))) + 1;
 
@@ -622,6 +683,26 @@ void MainLayer::OnUpdate(Hazel::Timestep ts) {
 	}
 	m_PrevChunk = chunk;
 
+	// Animate
+	{
+		//HZ_PROFILE_SCOPE("Animate");
+		m_AnimationAccumulator += ts;
+		if (m_AnimationAccumulator > 0.1f) {
+			m_AnimationAccumulator = 0.0f;
+			m_PlayerFrame = ++m_PlayerFrame % m_PlayerAnimations[static_cast<int>(m_PlayerState)].size();
+			if (IsIdle(m_PlayerState) && (m_PlayerFrame == 0)) {
+				if (m_Random.Uniform0_1() < 0.25f) {
+					m_PlayerState = SetBlinkState(m_PlayerState);
+				} else {
+					m_PlayerState = ClearBlinkState(m_PlayerState);
+				}
+				if (m_Random.Uniform0_1() < 1.0f / 8.0f) {
+					m_PlayerState = SwapFootTapState(m_PlayerState);
+				}
+			}
+		}
+	}
+
 	// Render
 	{
 		HZ_PROFILE_SCOPE("Renderer Draw");
@@ -629,36 +710,45 @@ void MainLayer::OnUpdate(Hazel::Timestep ts) {
 		Hazel::RenderCommand::SetClearColor({0.1f, 0.1f, 0.1f, 1});
 		Hazel::RenderCommand::Clear();
 
-		Hazel::Renderer2D::BeginScene(*m_Camera);
+		m_Camera->SetPosition(position);
 
+		Hazel::Renderer2D::BeginScene(*m_Camera);
 
 		// Ground
 		const std::vector<uint8_t>& groundType = m_GroundType[chunk];
 		for (int y = bottom; y < bottom + m_ViewportHeight; ++y) {
 			for (int x = left; x < left + m_ViewportWidth; ++x) {
 				int index = ((y - chunkBottom) * m_ChunkWidth) + (x - chunkLeft);
+#if TEST_MODE
+				if (x == 0 && y == 0) {
+					Hazel::Renderer2D::DrawQuad({x + 0.5, y + 0.5, -0.99f}, {1, 1}, m_GroundTextures[groundType[index]], 1.0f, {1.0f, 0.0f, 0.0f, 1.0f});
+				} else {
+					Hazel::Renderer2D::DrawQuad({x + 0.5, y + 0.5, -0.99f}, {1, 1}, m_GroundTextures[groundType[index]]);
+				}
+#else
 				Hazel::Renderer2D::DrawQuad({x + 0.5f, y + 0.5f, -0.99f}, {1, 1}, m_GroundTextures[groundType[index]]);
+#endif
 			}
 		}
 
 		// Tree shadows
-		const std::vector<glm::vec3>& treeShadowCoords = m_TreeShadowCoords[chunk];
+		const std::vector<glm::vec3>& treeShadowCoords = m_TreeShadowPositions[chunk];
 		const std::vector<glm::vec2>& treeShadowSize = m_TreeShadowSize[chunk];
 		for (size_t t = 0; t < treeShadowCoords.size(); ++t) {
 			Hazel::Renderer2D::DrawQuad(treeShadowCoords[t], treeShadowSize[t], m_TreeShadowTexture);
 		}
 
 		// Trees
-		const std::vector<glm::vec3>& treeCoords = m_TreeCoords[chunk];
-		const std::vector<glm::vec2>& treeScale = m_TreeScale[chunk];
+		const std::vector<glm::vec3>& treeCoords = m_TreePositions[chunk];
+		const std::vector<glm::vec2>& treeSize = m_TreeSize[chunk];
 		const std::vector<uint8_t>& treeType = m_TreeType[chunk];
 		for(size_t t = 0; t < treeCoords.size(); ++t) {
-			Hazel::Renderer2D::DrawQuad(treeCoords[t], treeScale[t], m_TreeTextures[treeType[t]]);
+			Hazel::Renderer2D::DrawQuad(treeCoords[t], treeSize[t], m_TreeTextures[treeType[t]]);
 		}
 
 		// Player
-		glm::vec3 playerPos = {m_PlayerPos, ((chunkTop - m_PlayerPos.y + 0.35f) / m_ChunkHeight / 10.0f) - 0.8f};
-		Hazel::Renderer2D::DrawQuad(playerPos, m_PlayerSize, m_PlayerSprites[m_PlayerAnimations[static_cast<int>(m_PlayerState)][m_PlayerFrame]]);
+		glm::vec3 playerPosition = {position.x, position.y, ((chunkTop - (m_PlayerPos.y)) / m_ChunkHeight / 10.0f) - 0.8f};
+		Hazel::Renderer2D::DrawQuad(playerPosition, m_PlayerSize, m_PlayerSprites[m_PlayerAnimations[static_cast<int>(m_PlayerState)][m_PlayerFrame]]);
 
 		Hazel::Renderer2D::EndScene();
 	}
@@ -677,24 +767,22 @@ void MainLayer::OnUpdate(Hazel::Timestep ts) {
 void MainLayer::UpdatePlayer(Hazel::Timestep ts) {
 	HZ_PROFILE_FUNCTION();
 
-	constexpr float moveSpeed = 1.5f;
-
 	PlayerState newState = PlayerState::Idle0;
 	if (Hazel::Input::IsKeyPressed(HZ_KEY_A)) {
-		m_PlayerPos.x -= ts * moveSpeed;
+		m_PlayerPos.x -= ts * m_PlayerMovementSpeed;
 		m_PlayerSize = {-1, 1};
 		newState = PlayerState::WalkLeft;
 	} else if (Hazel::Input::IsKeyPressed(HZ_KEY_D)) {
-		m_PlayerPos.x += ts * moveSpeed;
+		m_PlayerPos.x += ts * m_PlayerMovementSpeed;
 		m_PlayerSize = {1, 1};
 		newState = PlayerState::WalkRight;
 	}
 
 	if (Hazel::Input::IsKeyPressed(HZ_KEY_W)) {
-		m_PlayerPos.y += ts * moveSpeed;
+		m_PlayerPos.y += ts * m_PlayerMovementSpeed;
 		newState = PlayerState::WalkUp;
 	} else if (Hazel::Input::IsKeyPressed(HZ_KEY_S)) {
-		m_PlayerPos.y -= ts * moveSpeed;
+		m_PlayerPos.y -= ts * m_PlayerMovementSpeed;
 		newState = PlayerState::WalkDown;
 	}
 
