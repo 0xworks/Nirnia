@@ -81,6 +81,8 @@ private:
 	void GenerateMapChunk(const int i, const int j);
 
 	TreeProperties GenerateTree(uint8_t tree, const int x, const int y, const int chunkTop, Random& treeRandomizer);
+	std::vector<glm::vec2> GetWaterPolygon(const uint8_t groundTile, const int x, const int y);
+	std::vector<glm::vec2> GetTreeShadowPolygon(const glm::vec2 shadowPosition, const glm::vec2 shadowSize);
 
 	// Generates the map chunks (on a worker thread)
 	void ChunkGenerator();
@@ -114,6 +116,7 @@ private:
 	std::vector<Hazel::Ref<Hazel::SubTexture2D>> m_GroundTextures;
 	std::vector<Hazel::Ref<Hazel::SubTexture2D>> m_TreeTextures;
 	Hazel::Ref<Hazel::SubTexture2D> m_TreeShadowTexture;
+	std::vector<std::vector<glm::vec2>> m_GroundBlockedPolygons;
 	std::vector<float> m_TreeBottomYOffsets; // distance from bottom of tree to centre of tile.  Used for positioning tree within ground tiles, and for computing tree "z"
 	std::vector<float> m_TreeYScale;         // scale tree depending on tree type
 	std::vector<float> m_TreeShadowScale;    // scale shadow depending on tree type

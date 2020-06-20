@@ -166,10 +166,94 @@ void MainLayer::InitGroundTextures() {
 	m_GroundTextures[78] = Hazel::SubTexture2D::CreateFromCoords(m_BackgroundSheet, { 0,  0}, {128, 128});  // dirt  dirt  dirt  water  => X
 	m_GroundTextures[79] = Hazel::SubTexture2D::CreateFromCoords(m_BackgroundSheet, { 8, 12}, {128, 128});  // dirt  dirt  dirt  grass
 	m_GroundTextures[80] = Hazel::SubTexture2D::CreateFromCoords(m_BackgroundSheet, { 6, 11}, {128, 128});  // dirt  dirt  dirt  dirt
+	m_GroundTextures[81] = Hazel::SubTexture2D::CreateFromCoords(m_BackgroundSheet, { 3, 10}, {128, 128});  // grass grass grass grass
+	m_GroundTextures[82] = Hazel::SubTexture2D::CreateFromCoords(m_BackgroundSheet, { 4, 10}, {128, 128});  // grass grass grass grass
 
-	// There's a couple of other "grass" tiles
-	m_GroundTextures[81] = Hazel::SubTexture2D::CreateFromCoords(m_BackgroundSheet, {3, 10}, {128, 128});  // grass grass grass grass
-	m_GroundTextures[82] = Hazel::SubTexture2D::CreateFromCoords(m_BackgroundSheet, {4, 10}, {128, 128});  // grass grass grass grass
+	m_GroundBlockedPolygons.resize(83);                                      // TL    TR    BL    BR
+	m_GroundBlockedPolygons[0] = {{0, 128}, {128, 128}, {128, 0}, {0, 0}};  // water water water water
+	m_GroundBlockedPolygons[1] = {{0, 128}, {117, 128}, {128, 117}, {128, 0}, {0, 0}}; // water water water grass
+	m_GroundBlockedPolygons[2] = {};													 // water water water dirt  => X
+	m_GroundBlockedPolygons[3] = {{11, 128}, {128, 128}, {128, 0}, {0, 0}, {0, 117}}; // water water grass water
+	m_GroundBlockedPolygons[4] = {{0, 117}, {128, 117}, {128, 0}, {0, 0}};  // water water grass grass
+	m_GroundBlockedPolygons[5] = {};													 // water water grass dirt  => X
+	m_GroundBlockedPolygons[6] = {};													 // water water dirt  water  => X
+	m_GroundBlockedPolygons[7] = {};													 // water water dirt  grass  => X
+	m_GroundBlockedPolygons[8] = {};													 // water water dirt  dirt   => X
+	m_GroundBlockedPolygons[9] = {{0, 128}, {128,128}, {128,23}, {117, 0}, {0, 0}}; // water grass water water
+	m_GroundBlockedPolygons[10] = {{0, 128}, {117, 128}, {117, 0}, {0, 0}};  // water grass water grass
+	m_GroundBlockedPolygons[11] = {};													 // water grass water dirt  => X
+	m_GroundBlockedPolygons[12] = {{11, 128}, {128, 128}, {128, 23}, {117, 0}, {0, 0}}; // water grass grass water
+	m_GroundBlockedPolygons[13] = {{0, 117}, {95, 103}, {117, 45}, {117, 0}, {0, 0}};  // water grass grass grass
+	m_GroundBlockedPolygons[14] = {};													 // water grass grass dirt  => X
+	m_GroundBlockedPolygons[15] = {};													 // water grass dirt  water  => X
+	m_GroundBlockedPolygons[16] = {};													 // water grass dirt  grass  => X
+	m_GroundBlockedPolygons[17] = {};													 // water grass dirt  dirt   => X
+	m_GroundBlockedPolygons[18] = {};													 // water dirt  water water  => X
+	m_GroundBlockedPolygons[19] = {};													 // water dirt  water grass  => X
+	m_GroundBlockedPolygons[20] = {};													 // water dirt  water dirt   => X
+	m_GroundBlockedPolygons[21] = {};													 // water dirt  grass water  => X
+	m_GroundBlockedPolygons[22] = {};													 // water dirt  grass grass  => X
+	m_GroundBlockedPolygons[23] = {};													 // water dirt  grass dirt   => X
+	m_GroundBlockedPolygons[24] = {};													 // water dirt  dirt  water   => X
+	m_GroundBlockedPolygons[25] = {};													 // water dirt  dirt  grass   => X
+	m_GroundBlockedPolygons[26] = {};													 // water dirt  dirt  dirt    => X
+	m_GroundBlockedPolygons[27] = {{0, 128}, {128, 128}, {128, 0}, {11, 0}, {0, 23}}; // grass water water water
+	m_GroundBlockedPolygons[28] = {{0, 128}, {117, 128}, {128, 117}, {128, 0}, {11, 0}, {0, 23}}; // grass water water grass
+	m_GroundBlockedPolygons[29] = {};													 // grass water water dirt  => X
+	m_GroundBlockedPolygons[30] = {{11, 128}, {128, 128}, {128, 0}, {11, 0}};  // grass water grass water
+	m_GroundBlockedPolygons[31] = {{24, 98}, {83, 117}, {128, 117}, {128, 0}, {11, 0}};   // grass water grass grass
+	m_GroundBlockedPolygons[32] = {};													 // grass water grass dirt  => X
+	m_GroundBlockedPolygons[33] = {};													 // grass water dirt  water  => X
+	m_GroundBlockedPolygons[34] = {};													 // grass water dirt  grass  => X
+	m_GroundBlockedPolygons[35] = {};													 // grass water dirt  dirt   => X
+	m_GroundBlockedPolygons[36] = {{0, 128}, {128, 128}, {128, 23}, {0, 23}};                         // grass grass water water
+	m_GroundBlockedPolygons[37] = {{0, 128}, {117, 128}, {103, 45}, {48, 23}, {0, 23}};  // grass grass water grass
+	m_GroundBlockedPolygons[38] = {};													 // grass grass water dirt  => X
+	m_GroundBlockedPolygons[39] = {{11, 128}, {128,128}, {128, 23}, {33, 35}, {11, 97}};              // grass grass grass water
+	m_GroundBlockedPolygons[40] = {};													 // grass grass grass grass
+	m_GroundBlockedPolygons[41] = {};													 // grass grass grass dirt
+	m_GroundBlockedPolygons[42] = {};													 // grass grass dirt  water  => X
+	m_GroundBlockedPolygons[43] = {};													 // grass grass dirt  grass
+	m_GroundBlockedPolygons[44] = {};													 // grass grass dirt  dirt
+	m_GroundBlockedPolygons[45] = {};													 // grass dirt  water water  => X
+	m_GroundBlockedPolygons[46] = {};													 // grass dirt  water grass  => X
+	m_GroundBlockedPolygons[47] = {};													 // grass dirt  water dirt   => X
+	m_GroundBlockedPolygons[48] = {};													 // grass dirt  grass water  => X
+	m_GroundBlockedPolygons[49] = {};													 // grass dirt  grass grass
+	m_GroundBlockedPolygons[50] = {};													 // grass dirt  grass dirt
+	m_GroundBlockedPolygons[51] = {};													 // grass dirt  dirt  water   => X
+	m_GroundBlockedPolygons[52] = {};													 // grass dirt  dirt  grass
+	m_GroundBlockedPolygons[53] = {};													 // grass dirt  dirt  dirt
+	m_GroundBlockedPolygons[54] = {};													 // dirt  water water water  => X
+	m_GroundBlockedPolygons[55] = {};													 // dirt  water water grass  => X
+	m_GroundBlockedPolygons[56] = {};													 // dirt  water water dirt   => X
+	m_GroundBlockedPolygons[57] = {};													 // dirt  water grass water  => X
+	m_GroundBlockedPolygons[58] = {};													 // dirt  water grass grass  => X
+	m_GroundBlockedPolygons[59] = {};													 // dirt  water grass dirt   => X
+	m_GroundBlockedPolygons[60] = {};													 // dirt  water dirt  water   => X
+	m_GroundBlockedPolygons[61] = {};													 // dirt  water dirt  grass   => X
+	m_GroundBlockedPolygons[62] = {};													 // dirt  water dirt  dirt    => X
+	m_GroundBlockedPolygons[63] = {};													 // dirt  grass water water  => X
+	m_GroundBlockedPolygons[64] = {};													 // dirt  grass water grass  => X
+	m_GroundBlockedPolygons[65] = {};													 // dirt  grass water dirt   => X
+	m_GroundBlockedPolygons[66] = {};													 // dirt  grass grass water  => X
+	m_GroundBlockedPolygons[67] = {};													 // dirt  grass grass grass
+	m_GroundBlockedPolygons[68] = {};													 // dirt  grass grass dirt
+	m_GroundBlockedPolygons[69] = {};													 // dirt  grass dirt  water  => X
+	m_GroundBlockedPolygons[70] = {};													 // dirt  grass dirt  grass
+	m_GroundBlockedPolygons[71] = {};													 // dirt  grass dirt  dirt
+	m_GroundBlockedPolygons[72] = {};													 // dirt  dirt  water water  => X
+	m_GroundBlockedPolygons[73] = {};													 // dirt  dirt  water grass  => X
+	m_GroundBlockedPolygons[74] = {};													 // dirt  dirt  water dirt   => X
+	m_GroundBlockedPolygons[75] = {};													 // dirt  dirt  grass water  => X
+	m_GroundBlockedPolygons[76] = {};													 // dirt  dirt  grass grass
+	m_GroundBlockedPolygons[77] = {};													 // dirt  dirt  grass dirt
+	m_GroundBlockedPolygons[78] = {};													 // dirt  dirt  dirt  water   => X
+	m_GroundBlockedPolygons[79] = {};													 // dirt  dirt  dirt  grass
+	m_GroundBlockedPolygons[80] = {};													 // dirt  dirt  dirt  dirt
+	m_GroundBlockedPolygons[81] = {};
+	m_GroundBlockedPolygons[82] = {};
+
 
 	// Trees
 	m_TreeTextures.resize(12);
@@ -386,15 +470,19 @@ MainLayer::TreeProperties MainLayer::GenerateTree(uint8_t tree, const int x, con
 }
 
 
-std::vector<glm::vec2> GetWaterPolygon(const uint8_t groundTile, const int x, const int y) {
-	std::vector<glm::vec2> polygon = {{x, y}, {x + 1, y}, {x + 1, y + 1}, {x, y + 1}};
+std::vector<glm::vec2> MainLayer::GetWaterPolygon(const uint8_t groundTile, const int x, const int y) {
+	std::vector<glm::vec2> polygon;
+	polygon.reserve(m_GroundBlockedPolygons[groundTile].size());
+	for (const auto vertex : m_GroundBlockedPolygons[groundTile]) {
+		polygon.emplace_back(x + (vertex.x / 128.0f), y + (1.0f - (vertex.y / 128.0f)));
+	}
 	return polygon;
 }
 
 
-std::vector<glm::vec2> GetTreeShadowPolygon(const glm::vec2 shadowPosition, const glm::vec2 shadowSize, const float treeShadowYOffset) {
+std::vector<glm::vec2> MainLayer::GetTreeShadowPolygon(const glm::vec2 shadowPosition, const glm::vec2 shadowSize) {
 	glm::vec2 halfShadowSize = shadowSize / 2.0f;
-	glm::vec2 shadowCentre = {shadowPosition.x, shadowPosition.y - (treeShadowYOffset * shadowSize.y)};
+	glm::vec2 shadowCentre = {shadowPosition.x, shadowPosition.y - (m_TreeShadowYOffset * shadowSize.y)};
 	std::vector<glm::vec2> polygon = {
 		{shadowPosition.x - halfShadowSize.x + (25 / 128.0f), shadowPosition.y - halfShadowSize.y + (11 / 128.0f)},
 		{shadowPosition.x - halfShadowSize.x + (103 / 128.0f), shadowPosition.y - halfShadowSize.y + (11 / 128.0f)},
@@ -527,7 +615,7 @@ void MainLayer::ChunkGenerator() {
 						treeScale.emplace_back(props.Size);
 						treeShadowCoords.emplace_back(props.ShadowPosition);
 						treeShadowSize.emplace_back(props.ShadowSize);
-						navMesh.AddBlockedPolygon(GetTreeShadowPolygon(props.ShadowPosition, props.ShadowSize, m_TreeShadowYOffset));
+						navMesh.AddBlockedPolygon(GetTreeShadowPolygon(props.ShadowPosition, props.ShadowSize));
 					} else if (y == 1 && x == 1) {
 						TreeProperties props = GenerateTree(0, x, y, chunkTop, Random({x, y}));
 						treeType.emplace_back(props.Type);
@@ -535,7 +623,7 @@ void MainLayer::ChunkGenerator() {
 						treeScale.emplace_back(props.Size);
 						treeShadowCoords.emplace_back(props.ShadowPosition);
 						treeShadowSize.emplace_back(props.ShadowSize);
-						navMesh.AddBlockedPolygon(GetTreeShadowPolygon(props.ShadowPosition, props.ShadowSize, m_TreeShadowYOffset));
+						navMesh.AddBlockedPolygon(GetTreeShadowPolygon(props.ShadowPosition, props.ShadowSize));
 					}
 				}
 			}
@@ -556,7 +644,7 @@ void MainLayer::ChunkGenerator() {
 								treeScale.emplace_back(props.Size);
 								treeShadowCoords.emplace_back(props.ShadowPosition);
 								treeShadowSize.emplace_back(props.ShadowSize);
-								navMesh.AddBlockedPolygon(GetTreeShadowPolygon(props.ShadowPosition, props.ShadowSize, m_TreeShadowYOffset));
+								navMesh.AddBlockedPolygon(GetTreeShadowPolygon(props.ShadowPosition, props.ShadowSize));
 							}
 						} else if (treeValue > 0.0f) {
 							// small tree
@@ -567,7 +655,7 @@ void MainLayer::ChunkGenerator() {
 								treeScale.emplace_back(props.Size);
 								treeShadowCoords.emplace_back(props.ShadowPosition);
 								treeShadowSize.emplace_back(props.ShadowSize);
-								navMesh.AddBlockedPolygon(GetTreeShadowPolygon(props.ShadowPosition, props.ShadowSize, m_TreeShadowYOffset));
+								navMesh.AddBlockedPolygon(GetTreeShadowPolygon(props.ShadowPosition, props.ShadowSize));
 							}
 						}
 					} else if (IsDirt(groundTile)) {
@@ -582,7 +670,7 @@ void MainLayer::ChunkGenerator() {
 								treeScale.emplace_back(props.Size);
 								treeShadowCoords.emplace_back(props.ShadowPosition);
 								treeShadowSize.emplace_back(props.ShadowSize);
-								navMesh.AddBlockedPolygon(GetTreeShadowPolygon(props.ShadowPosition, props.ShadowSize, m_TreeShadowYOffset));
+								navMesh.AddBlockedPolygon(GetTreeShadowPolygon(props.ShadowPosition, props.ShadowSize));
 							}
 						} else if (treeValue > 0.0f) {
 							// orange shrubs
@@ -593,7 +681,7 @@ void MainLayer::ChunkGenerator() {
 								treeScale.emplace_back(props.Size);
 								treeShadowCoords.emplace_back(props.ShadowPosition);
 								treeShadowSize.emplace_back(props.ShadowSize);
-								navMesh.AddBlockedPolygon(GetTreeShadowPolygon(props.ShadowPosition, props.ShadowSize, m_TreeShadowYOffset));
+								navMesh.AddBlockedPolygon(GetTreeShadowPolygon(props.ShadowPosition, props.ShadowSize));
 								if (treeRandomizer.Uniform0_1() < 0.5f) {
 									TreeProperties props = GenerateTree(9, x, y, chunkTop, treeRandomizer);
 									treeType.emplace_back(props.Type);
@@ -601,7 +689,7 @@ void MainLayer::ChunkGenerator() {
 									treeScale.emplace_back(props.Size);
 									treeShadowCoords.emplace_back(props.ShadowPosition);
 									treeShadowSize.emplace_back(props.ShadowSize);
-									navMesh.AddBlockedPolygon(GetTreeShadowPolygon(props.ShadowPosition, props.ShadowSize, m_TreeShadowYOffset));
+									navMesh.AddBlockedPolygon(GetTreeShadowPolygon(props.ShadowPosition, props.ShadowSize));
 								}
 							}
 						}
