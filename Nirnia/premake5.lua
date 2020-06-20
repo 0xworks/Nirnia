@@ -12,6 +12,8 @@ project "Nirnia"
 	{
 		"src/**.h",
 		"src/**.cpp",
+		"vendor/clipper/clipper.hpp",
+		"vendor/clipper/clipper.cpp",
 		"vendor/FastNoise/FastNoise.cpp"
 	}
 
@@ -27,6 +29,7 @@ project "Nirnia"
 		"../Hazel/Hazel/vendor/glm",
 		"../Hazel/Hazel/vendor/imgui",
 		"../Hazel/Hazel/vendor/spdlog/include",
+		"vendor/clipper",
 		"vendor/FastNoise"
 	}
 	

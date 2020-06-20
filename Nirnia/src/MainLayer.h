@@ -1,5 +1,6 @@
 #pragma once
 
+#include "NavMesh2D.h"
 #include "PlayerState.h"
 #include "Random.h"
 
@@ -92,7 +93,7 @@ private:
 
 	bool OnWindowResize(Hazel::WindowResizeEvent& e);
 
-	void UpdatePlayer(Hazel::Timestep ts);
+	void UpdatePlayer(Hazel::Timestep ts, const std::pair<int, int> chunk);
 
 	bool IsGrass(uint8_t groundTile) { return (groundTile == 40) || (groundTile == 81) || (groundTile == 82); }
 	bool IsDirt(uint8_t groundTile) { return (groundTile >= 41) && (groundTile < 81); }
@@ -139,6 +140,7 @@ private:
 	std::unordered_map<std::pair<int, int>, std::vector<glm::vec2>> m_TreeSize;
 	std::unordered_map<std::pair<int, int>, std::vector<glm::vec3>> m_TreeShadowPositions;
 	std::unordered_map<std::pair<int, int>, std::vector<glm::vec2>> m_TreeShadowSize;
+	std::unordered_map<std::pair<int, int>, NavMesh2D> m_NavMesh;
 
 	glm::vec2 m_PlayerPos;
 	PlayerState m_PlayerState;
